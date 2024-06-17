@@ -1,0 +1,18 @@
+[
+  {
+    "arguments": [
+      "/nix/store/9bv7dcvmfcjnmg5mnqwqlq2wxfn8d7yi-gcc-wrapper-13.2.0/bin/gcc",
+      "-Wall",
+      "-g",
+      "-iquote",
+      "include",
+      "-c",
+      "-o",
+      "build/tokens.o",
+      "src/tokens.c"
+    ],
+    "directory": "/home/Erik/Documents/nCode/Projects/slack.c/master",
+    "file": "/home/Erik/Documents/nCode/Projects/slack.c/master/src/tokens.c",
+    "output": "/home/Erik/Documents/nCode/Projects/slack.c/master/build/tokens.o"
+  }
+]

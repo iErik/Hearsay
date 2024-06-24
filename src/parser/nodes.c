@@ -1,80 +1,222 @@
 #include <stdlib.h>
 
 #include "parser/nodes.h"
+#include "utils/text.h"
 
-nodeList* mkNodeList () {
-  nodeList* list = (nodeList *) malloc(sizeof(nodeList));
-  postMalloc(list);
 
-  list->nodes = (statementNode *) calloc(10,
-    sizeof(statementNode));
-  list->capacity = 10 * sizeof(statementNode);
-  list->length = 0;
+parserNode* mkRootNode () {
+  rootNode* root = make(rootNode);
+  postMalloc(root);
 
-  return list;
+  root->nodes = make(parserNode);
+  postMalloc(root->nodes);
+
+  root->capacity = 10 * sizeof(parserNode);
+  root->length = 0;
+  root->iteratorPtr = root->nodes;
+  root->offsetPtr = root->nodes;
+
+  parserNode* node = make(parserNode);
+  postMalloc(node);
+  node->type = RootNode;
+  node->meta = root;
+
+  return node;
 }
 
-void* growNodeList (nodeList* list) {
-  if (list->capacity == 0) {
-    list->nodes = (statementNode *) calloc(10,
-      sizeof(statementNode));
-    postMalloc(list->nodes);
-    list->capacity = sizeof(statementNode);
+void* growRootNode (parserNode* node) {
+  rootNode* root = node->meta;
+
+  if (root->capacity == 0) {
+    root->nodes = (parserNode*) calloc(10,
+      sizeof(parserNode));
+    postMalloc(root->nodes);
+    root->capacity = 10 * sizeof(parserNode);
+
   } else {
-    list->nodes = realloc(list->nodes, list->capacity * 2);
-    postMalloc(list->nodes);
-    list->capacity += 2;
+    root->nodes = realloc(root->nodes, root->capacity * 2);
+    postMalloc(root->nodes);
+    root->capacity *= 2;
   }
 
-  return list;
+  return node;
 }
 
-void pushNode (nodeList* list, statementNode node) {
-  if (list->capacity < list->capacity + sizeof(node)) {
-    list = growNodeList(list);
+void pushNode (parserNode* rNode, parserNode node) {
+  rootNode* root = (rootNode *) rNode->meta;
 
-    if (list == NULL) {
+  if (root->capacity < root->capacity + sizeof(node)) {
+    root = growRootNode(rNode);
+
+    if (root == NULL) {
       printf(
-          "ERROR - Could not push to nodeList: no memory");
+        "ERROR - Could not push to nodeList: no memory");
       return;
     }
   }
 
-  list->nodes[list->length] = node;
-  list->length += 1;
+  root->nodes[root->length] = node;
+  root->length += 1;
+}
+
+void* iterateNodes (parserNode* rNode) {
+  rootNode* root = (rootNode *) rNode->meta;
+
+  if (root->iteratorPtr == NULL)
+    return NULL;
+
+  parserNode* currValue = root->iteratorPtr;
+
+  if (root->iteratorPtr == root->offsetPtr)
+    root->iteratorPtr = NULL;
+  else
+    root->iteratorPtr++;
+
+  return currValue;
+}
+
+void resetIterator (parserNode* rNode) {
+  rootNode* root = (rootNode *) rNode->meta;
+  root->iteratorPtr = root->nodes;
+}
+
+parserNode* getNode (parserNode* rNode, uint offset) {
+  rootNode* root = (rootNode*) rNode->meta;
+  return (root->nodes + offset);
 }
 
 
-programNode* mkProgramNode () {
-  return NULL;
-}
+parserNode mkLetStatement (token letTkn, token idTkn) {
+  letStatement* meta = make(letStatement);
 
-statementNode mkLetStatement (letStatement* fields) {
-  return (statementNode) {
-    .type = LetStatement,
-    .fields = (void *) fields,
+  meta->name = mkIdNode(idTkn);
+
+  parserNode node = {
+    .type  = LetStatement,
+    .token = letTkn,
+    .meta  = meta
   };
+
+  return node;
 }
 
-identifierNode mkIdNode (token tkn, cstring value) {
-  return (identifierNode) { .token = tkn, .value = value };
+parserNode mkRetStatement (token retTkn) {
+  retStatement* meta = make(retStatement);
+
+  parserNode node = {
+    .type  = ReturnStatement,
+    .token = retTkn,
+    .meta  = meta
+  };
+
+  return node;
+}
+
+parserNode mkIdNode (token tkn) {
+  identifierNode* meta = make(identifierNode);
+
+  meta->value = tkn.literal;
+
+  parserNode node = {
+    .type = IdentifierNode,
+    .token = tkn,
+    .meta = meta
+  };
+
+  return node;
 }
 
 void mkExpressionNode () {}
 
+// -> AsString
+// -------------------------
 
-cstring identTokenLiteral (identifierNode* node) {
-  return node->token.literal;
+cstring rootAsString (parserNode* rNode) {
+  cstring str;
+  parserNode* currNode;
+
+  while ((currNode = iterateNodes(rNode)) != NULL)
+    str = interpol("%s%s", str, nodeAsString(currNode));
+
+  return str;
 }
 
-cstring letTokenLiteral (letStatement* node) {
-  return node->token.literal;
+cstring letAsString (parserNode* node) {
+  letStatement* letStat = node->meta;
+  cstring literal = node->token.literal;
+
+  cstring str = interpol("%s %s = %s;",
+    literal,
+    nodeAsString(&letStat->name),
+    nodeAsString(&letStat->value));
+
+  return str;
 }
 
-cstring programTokenLiteral (programNode* node) {
-  if (node->statements->length == 0) return "";
+cstring returnAsString (parserNode* node) {
+  retStatement* retStat = node->meta;
+  cstring literal = node->token.literal;
 
-  return "";
-  //return getNode(node->stateeges, 0)
+  cstring str = interpol("%s %s;",
+    literal,
+    nodeAsString(&retStat->value));
+
+  return str;
 }
 
+cstring identifierAsString (parserNode* node) {
+  identifierNode* id = node->meta;
+  return id->value;
+}
+
+cstring expressionAsString (parserNode* node) {
+  expressionNode* expr = node->meta;
+  return expr->value;
+}
+
+// -> GetTokenLiteral
+// ------------------------
+
+cstring rootTokenLiteral (parserNode* node) {
+  rootNode* root = node->meta;
+
+  if (root->length == 0) return "";
+
+  parserNode* firstNode = getNode(node, 0);
+  return getTokenLiteral(firstNode);
+}
+
+cstring getTokenLiteral (parserNode* node) {
+  switch (node->type) {
+    case RootNode:
+      return rootTokenLiteral(node);
+
+    case IdentifierNode:
+    case ExpressionNode:
+
+    case LetStatement:
+    case ReturnStatement:
+    case InvalidStatement:
+    default:
+      return node->token.literal;
+  }
+}
+
+cstring nodeAsString (parserNode* node) {
+  switch (node->type) {
+    case RootNode:
+      return rootAsString(node);
+    case IdentifierNode:
+      return identifierAsString(node);
+    case ExpressionNode:
+      return expressionAsString(node);
+    case LetStatement:
+      return letAsString(node);
+    case ReturnStatement:
+      return returnAsString(node);
+    case InvalidStatement:
+      return node->token.literal;
+    default:
+      return "";
+  }
+}

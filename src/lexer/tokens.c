@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "tokens.h"
+#include "lexer/tokens.h"
 
 
 // -> Constants
@@ -21,7 +21,7 @@ const token KEYWORDS[] = {
 // -> Functions
 // ------------
 
-int isLetter (char ch) {
+bool isLetter (char ch) {
   return
     ('a' <= ch && ch <= 'z') ||
     ('A' <= ch && ch <= 'Z') ||
@@ -29,17 +29,17 @@ int isLetter (char ch) {
     (ch == '?' || ch == '!');
 }
 
-int isDigit (char ch) {
+bool isDigit (char ch) {
   return '0' <= ch && ch <= '9';
 }
 
-int isWhitespace (char ch) {
+bool isWhitespace (char ch) {
   return
     ch ==  ' ' || ch == '\t' ||
     ch == '\n' || ch == '\r';
 }
 
-int tokenIs (token tkn, tokenType type) {
+bool tokenIs (token tkn, tokenType type) {
   return tkn.type == type;
 }
 

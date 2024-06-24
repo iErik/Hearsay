@@ -1,4 +1,4 @@
-#include "repl.h"
+#include "repl/repl.h"
 
 void TestRepl () {
   startRepl(stdin, stdout);

@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "utils.h"
-#include "lexer.h"
+#include "lexer/lexer.h"
 
 
 int isDigitSeparator (lexer* lex) {
@@ -27,7 +27,6 @@ lexer* mkLexer (cstring input) {
   lex->ch = 0;
 
   readChar(lex);
-
   return lex;
 }
 
@@ -173,5 +172,3 @@ char* readIdentifier (lexer* lex) {
 
   return substr(lex->input, position, lex->position);
 }
-
-

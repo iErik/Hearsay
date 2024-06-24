@@ -60,7 +60,7 @@ typedef struct token {
 token newToken (tokenType type, char* literal);
 tokenType lookupIdent (cstring ident);
 
-int isWhitespace (char ch);
-int isLetter (char ch);
-int isDigit (char ch);
-int tokenIs (token tkn, tokenType type);
+bool isWhitespace (char ch);
+bool isLetter (char ch);
+bool isDigit (char ch);
+bool tokenIs (token tkn, tokenType type);

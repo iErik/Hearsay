@@ -1,14 +1,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "test-utils.h"
+#include "utils/text.h"
+#include "tests/test-utils.h"
 
-void vfail (const char* message, va_list args) {
+
+void vfail (const cstring message, va_list args) {
   vfprintf(stdout, message, args);
   abort();
 }
 
-void fail (const char* message, ...) {
+void fail (const cstring message, ...) {
   va_list args;
 
   va_start(args, message);
@@ -18,16 +20,57 @@ void fail (const char* message, ...) {
   abort();
 }
 
+void testing (const cstring what) {
+  printr(interpol("=== %s ===", what), (renderTextOpts) {
+    .bold      = true,
+    .underline = true,
+    .fgColor   = FG_Black,
+    .bgColor   = BG_Cyan
+  });
+
+  printf("\n");
+}
+
 void expect (
   int condition,
-  const char* errorMessage,
+  const cstring message,
   ...
 ) {
-  if (condition) return;
-
   va_list args;
+  va_start(args, message);
 
-  va_start(args, errorMessage);
-  vfail(errorMessage, args);
+  cstring output = vinterpol(message, args);
+  cstring prefix = "";
+
+  if (condition) {
+    prefix = "[SUCCESS]";
+    prefix = renderstr(prefix, (renderTextOpts) {
+      .bold    = true,
+      .fgColor = FG_Black,
+      .bgColor = BG_BrightGreen,
+    });
+
+    printf("%s: ", prefix);
+    printr(output, (renderTextOpts) {
+      .bold = true,
+      .fgColor = FG_BrightGreen,
+    });
+  } else {
+    prefix = "[FAILURE]";
+    prefix = renderstr(prefix, (renderTextOpts) {
+      .bold    = true,
+      .fgColor = FG_Black,
+      .bgColor = BG_BrightRed,
+    });
+
+    printf("%s: ", prefix);
+    printr(output, (renderTextOpts) {
+      .bold = true,
+      .fgColor = FG_BrightRed,
+    });
+
+    //abort();
+  }
+
   va_end(args);
 }

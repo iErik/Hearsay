@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "repl.h"
+#include "repl/repl.h"
 
 lexer* readLine (stream from) {
   char* input = (char*) malloc(INPUT_MAX * sizeof(char));

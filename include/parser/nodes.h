@@ -1,13 +1,18 @@
 #pragma once
 
 #include <stddef.h>
-#include "tokens.h"
+#include "lexer/tokens.h"
 
 // -> Macros
 // ---------
 
+/*
 #define TokenLiteral(node) \
   node->vtable->getTokenLiteral(node)
+*/
+
+#define TokenLiteral(node) _Generic(typeof(node) \
+  )
 
 #define StatementNode(node) \
   node->vtable->getStatementNode(node)
@@ -15,79 +20,98 @@
 #define ExpressionNode(node) \
   node->vtable->getExpressionNode(node)
 
-#define LET_NODE {         \
-  .type   = "LET",         \
-}
+#define AsString (node) \
+  nodes->vtable->asString(node)
 
-#define INVALID_STATEMENT (statementNode) { \
+#define INVALID_STATEMENT (parserNode) { \
   .type = InvalidStatement                  \
 }
 
 // ROOT:
 //  - Statements []Statements{}
 
+// Interfaces:
+//  - Node { TokenLiteral() string, asString() string }
+//  - Statement { Node + statementNode() }
+//  - Expression { Node + expressionNode() }
+
 // -> Constants
 // ------------
 
 typedef enum {
+  RootNode,
+
+  IdentifierNode,
+  ExpressionNode,
+
   LetStatement,
+  ReturnStatement,
   InvalidStatement
-} statementType;
+} nodeType;
 
 // -> Types
 // --------
 
-typedef struct statementNode {
-  statementType type;
-  void*         fields;
-  void*         vtable;
-} statementNode;
+typedef struct parserNode {
+  nodeType type;
+  token token;
 
-typedef struct programNode {
-  struct nodeList* statements;
-} programNode;
+  void* meta;
+} parserNode;
+
+typedef struct rootNode {
+  parserNode* nodes;
+  parserNode* offsetPtr;
+  parserNode* iteratorPtr;
+
+  size_t capacity;
+  size_t length;
+} rootNode;
 
 typedef struct identifierNode {
-  token   token;
   cstring value;
 } identifierNode;
 
 typedef struct expressionNode {
-
+  cstring value;
 } expressionNode;
 
 typedef struct letStatement {
-  token           token;
-  identifierNode  name;
-  expressionNode  value;
+  // Identifier
+  parserNode name;
+  // Expression
+  parserNode value;
 } letStatement;
 
-typedef struct nodeVTable {
-  cstring         (*getTokenLiteral)   ();
-  void*           (*getStatementNode)  ();
-  expressionNode* (*getExpressionNode) ();
-} nodeVTable;
-
-typedef struct nodeList {
-  statementNode* nodes;
-  size_t         capacity;
-  size_t         length;
-} nodeList;
+typedef struct retStatement {
+  // Expression
+  parserNode value;
+} retStatement;
 
 
 // -> Functions
 // ------------
 
-nodeList* mkNodeList ();
+parserNode* mkRootNode ();
 
-void* growNodeList (nodeList* list);
+void* growRootNode (parserNode* node);
 
-void pushNode (nodeList* list, statementNode node);
+void pushNode (parserNode* rootNode, parserNode node);
+
+void* iterateNodes (parserNode* rootNode);
+
+parserNode* getNode(parserNode* rootNode, uint offset);
 
 
-programNode* mkProgramNode ();
+parserNode* mkProgramNode ();
 
-statementNode mkLetStatement (token tkn);
+parserNode mkLetStatement (token letTkn, token idTkn);
 
-identifierNode mkIdNode (token tkn, cstring value);
+parserNode mkRetStatement (token retTkn);
 
+parserNode mkIdNode (token tkn);
+
+
+cstring getTokenLiteral (parserNode* node);
+
+cstring nodeAsString (parserNode* node);

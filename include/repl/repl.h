@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lexer.h"
+#include "lexer/lexer.h"
 #include "common.h"
 
 #define INPUT_MAX 1000

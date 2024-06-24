@@ -1,14 +1,16 @@
-#include <stdlib.h>
+#include "utils/array.h"
+#include "utils/text.h"
 
-#include "tokens.h"
+#include "lexer/tokens.h"
 #include "parser/nodes.h"
 #include "parser/parser.h"
 
 
 parser* mkParser (lexer* lex) {
-  parser* pars = (parser*) calloc(1, sizeof(parser));
+  parser* pars = cmake(parser);
   checkNullPtr(pars);
 
+  pars->errors = mkArray();
   pars->lexer = lex;
 
   return pars;
@@ -29,53 +31,91 @@ bool peekTknIs (parser* pars, tokenType type) {
 }
 
 bool peekExpect (parser* pars, tokenType type) {
-  if (!peekTknIs(pars, type)) return false;
+  if (!peekTknIs(pars, type)) {
+    peekError(pars, type);
 
-  advanceParser(pars);
-  return true;
-}
-
-programNode* parseProgram (parser* pars) {
-  programNode* program = (programNode *) calloc(1,
-    sizeof(programNode));
-  postMalloc(program);
-  program->statements = mkNodeList();
-
-  while (!tokenIs(pars->currToken, TknEOF)) {
-    statementNode stat = parseStatement(pars);
+    return false;
+  } else {
     advanceParser(pars);
 
-    if (stat.type != InvalidStatement)
-      pushNode(program->statements, stat);
+    return true;
   }
-
-  return program;
 }
 
-statementNode parseLetStatement (parser* pars) {
-  letStatement* fields = (letStatement *) malloc(
-    sizeof(letStatement));
-  //{ .token = pars->currToken };
-  //postMalloc(fields);
+cstring listParserErrors (parser* pars) {
+  if (!hasParsingErrors(pars)) return "";
 
-  fields->token = pars->currToken;
+  cstring errors = "\n";
+
+  for (int i = 0; i < arrLen(pars->errors); i++) errors =
+    interpol(
+      "%s%s\n",
+      errors,
+      (cstring) arrGet(pars->errors, i));
+
+  return errors;
+}
+
+bool hasParsingErrors (parser* pars) {
+  return arrLen(pars->errors) > 0;
+}
+
+void peekError (parser* pars, tokenType expectedType) {
+  cstring error = interpol(
+    "Expected next token to be %i, got %i instead",
+    expectedType, pars->peekToken.type);
+
+  arrPush(pars->errors, error);
+}
+
+parserNode* parseProgram (parser* pars) {
+  parserNode* root = mkRootNode();
+  checkNullPtr(root);
+
+  while (!tokenIs(pars->currToken, TknEOF)) {
+    parserNode node = parseStatement(pars);
+    advanceParser(pars);
+
+    if (node.type != InvalidStatement)
+      pushNode(root, node);
+  }
+
+  return root;
+}
+
+parserNode parseLetStatement (parser* pars) {
+  token letTkn = pars->currToken;
 
   if (!peekExpect(pars, TknIdent))
     return INVALID_STATEMENT;
 
+  token idTkn = pars->currToken;
+
   if (!peekExpect(pars, TknAssign))
     return INVALID_STATEMENT;
 
-  fields->name = mkIdNode(
-    pars->currToken,
-    pars->currToken.literal
-  );
+  parserNode letNode = mkLetStatement(letTkn, idTkn);
 
-  statementNode stat = mkLetStatement(fields);
-  return stat;
+  while (!tokenIs(pars->currToken, TknSemicolon))
+    advanceParser(pars);
+
+  return letNode;
 }
 
-statementNode parseStatement (parser* pars) {
+parserNode parseRetStatement (parser* pars) {
+  token retTkn = pars->currToken;
+
+  advanceParser(pars);
+
+  while (!tokenIs(pars->currToken, TknSemicolon))
+    advanceParser(pars);
+
+  parserNode retStat = mkRetStatement(retTkn);
+
+  return retStat;
+}
+
+parserNode parseStatement (parser* pars) {
   switch (pars->currToken.type) {
     case TknIllegal:
       break;
@@ -126,7 +166,7 @@ statementNode parseStatement (parser* pars) {
     case TknFunction:
       break;
     case TknReturn:
-      break;
+      return parseRetStatement(pars);
     case TknIf:
       break;
     case TknElif:

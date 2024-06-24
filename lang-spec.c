@@ -1,3 +1,6 @@
+#include <stdlib.h>
+
+
 // Variable declaration:
 // <type> <name> = <value>;
 // <type> <name>[<num items>] = <value>;
@@ -33,3 +36,19 @@ double dd = 10.2;
 // int main () { print("Hi"); int variable = 10; }
 
 // int func () { }
+
+typedef struct Test {
+  char* buff;
+} Test;
+
+int main () {
+  Test* myTest = (Test *) malloc(sizeof(Test));
+  if (myTest == NULL) { return 1; }
+
+  myTest->buff = (char *) calloc(10, sizeof(char));
+  if (myTest->buff == NULL) { return 1; }
+
+  free(myTest);
+
+  return 0;
+}

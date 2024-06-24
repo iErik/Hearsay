@@ -6,8 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "test-utils.h"
-#include "lexer.h"
+#include "tests/test-utils.h"
+#include "utils.h"
+#include "lexer/lexer.h"
 
 
 // -> Types Defs
@@ -63,8 +64,7 @@ void TestReadIdentifier () {
 }
 
 void TestMkLexer () {
-  printf("\nmkLexer test\n");
-  printf("-----------\n");
+  printf("\n=== mkLexer Test ===\n");
 
   cstring input = "=+(){};abcsd";
   lexer* lex = mkLexer(input);
@@ -106,8 +106,7 @@ void TestMkLexer () {
 }
 
 void TestNextToken () {
-  printf("\nnextToken test\n");
-  printf("-----------\n");
+  printf("\n=== nextToken Test ===\n");
 
   cstring input =
     "let five = 5;\n"
@@ -129,83 +128,83 @@ void TestNextToken () {
   token token;
 
   tokenExpect tests[] =  {
-    { TKN_LET, "let" },
-    { TKN_IDENT, "five" },
-    { TKN_ASSIGN, "=" },
-    { TKN_INT, "5" },
-    { TKN_SEMICOLON, ";" },
-    { TKN_LET, "let" },
-    { TKN_IDENT, "ten" },
-    { TKN_ASSIGN, "=" },
-    { TKN_INT, "10" },
-    { TKN_SEMICOLON, ";" },
-    { TKN_LET, "let" },
-    { TKN_IDENT, "add" },
-    { TKN_ASSIGN, "=" },
-    { TKN_FUNCTION, "fun" },
-    { TKN_LPAREN, "(" },
-    { TKN_IDENT, "x" },
-    { TKN_COMMA, "," },
-    { TKN_IDENT, "y" },
-    { TKN_RPAREN, ")" },
-    { TKN_LBRACE, "{" },
-    { TKN_IDENT, "x" },
-    { TKN_PLUS, "+" },
-    { TKN_IDENT, "y" },
-    { TKN_SEMICOLON, ";" },
-    { TKN_RBRACE, "}" },
-    { TKN_SEMICOLON, ";" },
-    { TKN_LET, "let" },
-    { TKN_IDENT, "result" },
-    { TKN_ASSIGN, "=" },
-    { TKN_IDENT, "add" },
-    { TKN_LPAREN, "(" },
-    { TKN_IDENT, "five" },
-    { TKN_COMMA, "," },
-    { TKN_IDENT, "ten" },
-    { TKN_RPAREN, ")" },
-    { TKN_SEMICOLON, ";" },
-    { TKN_BANG, "!" },
-    { TKN_MINUS, "-" },
-    { TKN_SLASH, "/"},
-    { TKN_ASTERISK, "*" },
-    { TKN_INT, "5" },
-    { TKN_SEMICOLON, ";" },
-    { TKN_INT, "5" },
-    { TKN_LT, "<" },
-    { TKN_INT, "10" },
-    { TKN_GT, ">" },
-    { TKN_INT, "5" },
-    { TKN_SEMICOLON, ";" },
-    { TKN_IF, "if" },
-    { TKN_LPAREN, "(" },
-    { TKN_INT, "5" },
-    { TKN_NEQ, "!=" },
-    { TKN_INT, "10" },
-    { TKN_RPAREN, ")" },
-    { TKN_LBRACE, "{" },
-    { TKN_RET, "ret" },
-    { TKN_TRUE, "true" },
-    { TKN_SEMICOLON, ";" },
-    { TKN_RBRACE, "}" },
-    { TKN_ELIF, "elif" },
-    { TKN_LPAREN, "(" },
-    { TKN_INT, "5" },
-    { TKN_EQ, "==" },
-    { TKN_INT, "10" },
-    { TKN_RPAREN, ")" },
-    { TKN_LBRACE, "{" },
-    { TKN_RET, "ret" },
-    { TKN_INT, "20" },
-    { TKN_SEMICOLON, ";" },
-    { TKN_RBRACE, "}" },
-    { TKN_ELSE, "else" },
-    { TKN_LBRACE, "{" },
-    { TKN_RET, "ret" },
-    { TKN_FALSE, "false" },
-    { TKN_SEMICOLON, ";" },
-    { TKN_RBRACE, "}" },
-    { TKN_EOF, "" }
+    { TknLet, "let" },
+    { TknIdent, "five" },
+    { TknAssign, "=" },
+    { TknInt, "5" },
+    { TknSemicolon, ";" },
+    { TknLet, "let" },
+    { TknIdent, "ten" },
+    { TknAssign, "=" },
+    { TknInt, "10" },
+    { TknSemicolon, ";" },
+    { TknLet, "let" },
+    { TknIdent, "add" },
+    { TknAssign, "=" },
+    { TknFunction, "fun" },
+    { TknLParen, "(" },
+    { TknIdent, "x" },
+    { TknComma, "," },
+    { TknIdent, "y" },
+    { TknRParen, ")" },
+    { TknLParen, "{" },
+    { TknIdent, "x" },
+    { TknPlus, "+" },
+    { TknIdent, "y" },
+    { TknSemicolon, ";" },
+    { TknRBrace, "}" },
+    { TknSemicolon, ";" },
+    { TknLet, "let" },
+    { TknIdent, "result" },
+    { TknAssign, "=" },
+    { TknIdent, "add" },
+    { TknLParen, "(" },
+    { TknIdent, "five" },
+    { TknComma, "," },
+    { TknIdent, "ten" },
+    { TknRParen, ")" },
+    { TknSemicolon, ";" },
+    { TknBang, "!" },
+    { TknMinus, "-" },
+    { TknSlash, "/"},
+    { TknAsterisk, "*" },
+    { TknInt, "5" },
+    { TknSemicolon, ";" },
+    { TknInt, "5" },
+    { TknLT, "<" },
+    { TknInt, "10" },
+    { TknGT, ">" },
+    { TknInt, "5" },
+    { TknSemicolon, ";" },
+    { TknIf, "if" },
+    { TknLParen, "(" },
+    { TknInt, "5" },
+    { TknNEQ, "!=" },
+    { TknInt, "10" },
+    { TknRParen, ")" },
+    { TknLBrace, "{" },
+    { TknReturn, "ret" },
+    { TknTrue, "true" },
+    { TknSemicolon, ";" },
+    { TknRBrace, "}" },
+    { TknElif, "elif" },
+    { TknLParen, "(" },
+    { TknInt, "5" },
+    { TknEQ, "==" },
+    { TknInt, "10" },
+    { TknRParen, ")" },
+    { TknLBrace, "{" },
+    { TknReturn, "ret" },
+    { TknInt, "20" },
+    { TknSemicolon, ";" },
+    { TknRBrace, "}" },
+    { TknElse, "else" },
+    { TknLBrace, "{" },
+    { TknReturn, "ret" },
+    { TknFalse, "false" },
+    { TknSemicolon, ";" },
+    { TknRBrace, "}" },
+    { TknEOF, "" }
   };
 
   lexer* lex = mkLexer(input);
@@ -214,7 +213,7 @@ void TestNextToken () {
   for (int i = 0; i < testsLen; i++) {
     token = nextToken(lex);
 
-    expect(strcmp(token.type, tests[i].type) == 0,
+    expect(token.type == tests[i].type,
       "\nTest failed - incorrect token type.\n"
       "Expected: %s\n"
       "Received: %s\n"

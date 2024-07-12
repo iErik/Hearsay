@@ -68,12 +68,12 @@ void peekError (parser* pars, tokenType expectedType) {
   arrPush(pars->errors, error);
 }
 
-parserNode* parseProgram (parser* pars) {
-  parserNode* root = mkRootNode();
+rootNode* parseProgram (parser* pars) {
+  rootNode* root = mkRootNode();
   checkNullPtr(root);
 
   while (!tokenIs(pars->currToken, TknEOF)) {
-    parserNode node = parseStatement(pars);
+    nodeWrapper node = parseStatement(pars);
     advanceParser(pars);
 
     if (node.type != InvalidStatement)
@@ -83,7 +83,11 @@ parserNode* parseProgram (parser* pars) {
   return root;
 }
 
-parserNode parseLetStatement (parser* pars) {
+expressionNode* prefixParser () {}
+
+expressionNode* infixParser () {}
+
+nodeWrapper parseLetStatement (parser* pars) {
   token letTkn = pars->currToken;
 
   if (!peekExpect(pars, TknIdent))
@@ -94,15 +98,15 @@ parserNode parseLetStatement (parser* pars) {
   if (!peekExpect(pars, TknAssign))
     return INVALID_STATEMENT;
 
-  parserNode letNode = mkLetStatement(letTkn, idTkn);
+  letStatement* letNode = mkLetStatement(letTkn, idTkn);
 
   while (!tokenIs(pars->currToken, TknSemicolon))
     advanceParser(pars);
 
-  return letNode;
+  return WrapNode(letNode);
 }
 
-parserNode parseRetStatement (parser* pars) {
+nodeWrapper parseRetStatement (parser* pars) {
   token retTkn = pars->currToken;
 
   advanceParser(pars);
@@ -110,12 +114,12 @@ parserNode parseRetStatement (parser* pars) {
   while (!tokenIs(pars->currToken, TknSemicolon))
     advanceParser(pars);
 
-  parserNode retStat = mkRetStatement(retTkn);
+  retStatement* retStat = mkRetStatement(retTkn);
 
-  return retStat;
+  return WrapNode(retStat);
 }
 
-parserNode parseStatement (parser* pars) {
+nodeWrapper parseStatement (parser* pars) {
   switch (pars->currToken.type) {
     case TknIllegal:
       break;

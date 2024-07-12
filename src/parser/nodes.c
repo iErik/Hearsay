@@ -1,127 +1,117 @@
 #include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 
 #include "parser/nodes.h"
 #include "utils/text.h"
 
 
-parserNode* mkRootNode () {
+rootNode* mkRootNode () {
   rootNode* root = make(rootNode);
   postMalloc(root);
 
-  root->nodes = make(parserNode);
+  root->nodes = make(nodeWrapper);
   postMalloc(root->nodes);
 
-  root->capacity = 10 * sizeof(parserNode);
+  root->capacity = 10 * sizeof(nodeWrapper);
   root->length = 0;
-  root->iteratorPtr = root->nodes;
+  root->iteratorPos = 0;
   root->offsetPtr = root->nodes;
 
-  parserNode* node = make(parserNode);
-  postMalloc(node);
-  node->type = RootNode;
-  node->meta = root;
-
-  return node;
+  return root;
 }
 
-void* growRootNode (parserNode* node) {
-  rootNode* root = node->meta;
+void unmkRootNode (rootNode* rNode) {
 
-  if (root->capacity == 0) {
-    root->nodes = (parserNode*) calloc(10,
-      sizeof(parserNode));
-    postMalloc(root->nodes);
-    root->capacity = 10 * sizeof(parserNode);
+}
+
+void* growRootNode (rootNode* rNode) {
+  if (rNode->capacity == 0) {
+    rNode->nodes = (nodeWrapper*) calloc(10,
+      sizeof(nodeWrapper));
+    postMalloc(rNode->nodes);
+    rNode->capacity = 10 * sizeof(nodeWrapper);
 
   } else {
-    root->nodes = realloc(root->nodes, root->capacity * 2);
-    postMalloc(root->nodes);
-    root->capacity *= 2;
+    rNode->nodes = realloc(
+      rNode->nodes,
+      rNode->capacity * 2);
+    postMalloc(rNode->nodes);
+    rNode->capacity *= 2;
   }
 
-  return node;
+  return rNode;
 }
 
-void pushNode (parserNode* rNode, parserNode node) {
-  rootNode* root = (rootNode *) rNode->meta;
+void pushNode (rootNode* rNode, nodeWrapper node) {
+  if (rNode->capacity < rNode->capacity + sizeof(node)) {
+    rNode = growRootNode(rNode);
 
-  if (root->capacity < root->capacity + sizeof(node)) {
-    root = growRootNode(rNode);
-
-    if (root == NULL) {
+    if (rNode->nodes == NULL) {
       printf(
         "ERROR - Could not push to nodeList: no memory");
       return;
     }
   }
 
-  root->nodes[root->length] = node;
-  root->length += 1;
+  rNode->nodes[rNode->length] = node;
+  rNode->offsetPtr = &rNode->nodes[rNode->length];
+  rNode->length += 1;
 }
 
-void* iterateNodes (parserNode* rNode) {
-  rootNode* root = (rootNode *) rNode->meta;
-
-  if (root->iteratorPtr == NULL)
+nodeWrapper* nextNode (rootNode* rNode) {
+  if (rNode->iteratorPos >= rNode->length)
     return NULL;
 
-  parserNode* currValue = root->iteratorPtr;
-
-  if (root->iteratorPtr == root->offsetPtr)
-    root->iteratorPtr = NULL;
-  else
-    root->iteratorPtr++;
-
-  return currValue;
-}
-
-void resetIterator (parserNode* rNode) {
-  rootNode* root = (rootNode *) rNode->meta;
-  root->iteratorPtr = root->nodes;
-}
-
-parserNode* getNode (parserNode* rNode, uint offset) {
-  rootNode* root = (rootNode*) rNode->meta;
-  return (root->nodes + offset);
-}
-
-
-parserNode mkLetStatement (token letTkn, token idTkn) {
-  letStatement* meta = make(letStatement);
-
-  meta->name = mkIdNode(idTkn);
-
-  parserNode node = {
-    .type  = LetStatement,
-    .token = letTkn,
-    .meta  = meta
-  };
+  nodeWrapper* node = &rNode->nodes[rNode->iteratorPos];
+  rNode->iteratorPos++;
 
   return node;
 }
 
-parserNode mkRetStatement (token retTkn) {
-  retStatement* meta = make(retStatement);
+nodeWrapper* iterator (rootNode* rNode) {
+  return (rNode->nodes + rNode->iteratorPos);
+}
 
-  parserNode node = {
-    .type  = ReturnStatement,
-    .token = retTkn,
-    .meta  = meta
-  };
+void resetIterator (rootNode* rNode) {
+  rNode->iteratorPos = 0;
+}
+
+nodeWrapper* getNode (rootNode* rNode, uint offset) {
+  if ((offset + 1) > rNode->length) return NULL;
+
+  return (rNode->nodes + offset);
+}
+
+
+letStatement* mkLetStatement (token letTkn, token idTkn) {
+  if (letTkn.type != TknLet) return NULL;
+
+  letStatement* node = make(letStatement);
+
+  node->name = mkIdNode(idTkn);
+  node->token = letTkn;
 
   return node;
 }
 
-parserNode mkIdNode (token tkn) {
-  identifierNode* meta = make(identifierNode);
+retStatement* mkRetStatement (token retTkn) {
+  if (retTkn.type != TknReturn) return NULL;
 
-  meta->value = tkn.literal;
+  retStatement* node = make(retStatement);
 
-  parserNode node = {
-    .type = IdentifierNode,
-    .token = tkn,
-    .meta = meta
-  };
+  node->token = retTkn;
+
+  return node;
+}
+
+identifierNode* mkIdNode (token tkn) {
+  if (tkn.type != TknIdent) return NULL;
+
+  identifierNode* node = make(identifierNode);
+
+  node->token = tkn;
+  node->value = tkn.literal;
 
   return node;
 }
@@ -131,92 +121,150 @@ void mkExpressionNode () {}
 // -> AsString
 // -------------------------
 
-cstring rootAsString (parserNode* rNode) {
+cstring rootAsString (rootNode* rNode) {
   cstring str;
-  parserNode* currNode;
+  nodeWrapper* currNode = NULL;
 
-  while ((currNode = iterateNodes(rNode)) != NULL)
-    str = interpol("%s%s", str, nodeAsString(currNode));
+  while ((currNode = nextNode(rNode)) != NULL)
+    str = interpol("%s%s", str, wrapperAsString(currNode));
 
   return str;
 }
 
-cstring letAsString (parserNode* node) {
-  letStatement* letStat = node->meta;
+cstring letAsString (letStatement* node) {
+  if (node == NULL) return "";
+
   cstring literal = node->token.literal;
 
   cstring str = interpol("%s %s = %s;",
     literal,
-    nodeAsString(&letStat->name),
-    nodeAsString(&letStat->value));
+    AsString(node->name),
+    AsString(node->value));
 
   return str;
 }
 
-cstring returnAsString (parserNode* node) {
-  retStatement* retStat = node->meta;
+cstring returnAsString (retStatement* node) {
+  if (node == NULL) return "";
+
   cstring literal = node->token.literal;
 
   cstring str = interpol("%s %s;",
     literal,
-    nodeAsString(&retStat->value));
+    AsString(node->value));
 
   return str;
 }
 
-cstring identifierAsString (parserNode* node) {
-  identifierNode* id = node->meta;
-  return id->value;
+cstring identifierAsString (identifierNode* node) {
+  if (node == NULL) return "";
+
+  return node->value;
 }
 
-cstring expressionAsString (parserNode* node) {
-  expressionNode* expr = node->meta;
-  return expr->value;
+cstring expressionAsString (expressionNode* node) {
+  if (node == NULL) return "";
+
+  return node->value;
+}
+
+cstring invalidAsString (invalidNode* node) {
+  if (node == NULL) return "";
+
+  return node->token.literal;
+}
+
+cstring wrapperAsString (nodeWrapper* wrapper) {
+  if (wrapper == NULL) return "";
+
+  switch (wrapper->type) {
+    case RootNode:
+      return rootAsString(wrapper->node);
+    case IdentifierNode:
+      return identifierAsString(wrapper->node);
+    case ExpressionNode:
+      return expressionAsString(wrapper->node);
+    case LetStatement:
+      return letAsString(wrapper->node);
+    case ReturnStatement:
+      return returnAsString(wrapper->node);
+    case InvalidStatement:
+    default:
+      return "";
+  }
 }
 
 // -> GetTokenLiteral
 // ------------------------
 
-cstring rootTokenLiteral (parserNode* node) {
-  rootNode* root = node->meta;
+cstring rootTokenLiteral (rootNode* rNode) {
+  if (rNode->length == 0) return "";
 
-  if (root->length == 0) return "";
-
-  parserNode* firstNode = getNode(node, 0);
+  nodeWrapper* firstNode = getNode(rNode, 0);
   return getTokenLiteral(firstNode);
 }
 
-cstring getTokenLiteral (parserNode* node) {
-  switch (node->type) {
+cstring getTokenLiteral (nodeWrapper* wrapper) {
+  void* node = wrapper->node;
+
+  switch (wrapper->type) {
     case RootNode:
-      return rootTokenLiteral(node);
-
+      return rootTokenLiteral(wrapper->node);
     case IdentifierNode:
+      return ((identifierNode *) node)->token.literal;
     case ExpressionNode:
-
+      return ((expressionNode *) node)->token.literal;
     case LetStatement:
+      return ((letStatement *) node)->token.literal;
     case ReturnStatement:
+      return ((retStatement *) node)->token.literal;
     case InvalidStatement:
-    default:
-      return node->token.literal;
-  }
-}
-
-cstring nodeAsString (parserNode* node) {
-  switch (node->type) {
-    case RootNode:
-      return rootAsString(node);
-    case IdentifierNode:
-      return identifierAsString(node);
-    case ExpressionNode:
-      return expressionAsString(node);
-    case LetStatement:
-      return letAsString(node);
-    case ReturnStatement:
-      return returnAsString(node);
-    case InvalidStatement:
-      return node->token.literal;
     default:
       return "";
   }
+}
+
+// -> Wrappers
+// -----------
+
+nodeWrapper wrapRootNode (rootNode* node) {
+  return (nodeWrapper) {
+    .type = RootNode,
+    .node = node
+  };
+}
+
+nodeWrapper wrapIdentifierNode (identifierNode* node) {
+  return (nodeWrapper) {
+    .type = IdentifierNode,
+    .node = node
+  };
+}
+
+nodeWrapper wrapExpressionNode (expressionNode* node) {
+  return (nodeWrapper) {
+    .type = ExpressionNode,
+    .node = node
+  };
+}
+
+nodeWrapper wrapLetNode (letStatement* node) {
+  return (nodeWrapper) {
+    .type = LetStatement,
+    .node = node
+  };
+}
+
+nodeWrapper wrapReturnNode (retStatement* node) {
+  return (nodeWrapper) {
+    .type = ReturnStatement,
+    .node = node
+  };
+}
+
+nodeWrapper wrapInvalidNode (invalidNode* node) {
+  return (nodeWrapper) {
+    .type = InvalidStatement,
+    .node = node
+  };
 }

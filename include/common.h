@@ -10,8 +10,9 @@
 
 #define postMalloc(var) if (var == NULL) return NULL;
 
-#define make(type) (type *) malloc(sizeof(type))
-#define cmake(type) (type *) calloc(1, sizeof(type))
+#define make(T) (T *) malloc(sizeof(T))
+#define cmake(T) (T *) calloc(1, sizeof(T))
+#define cmaken(C, T) (T *) calloc(C, sizeof(T))
 
 typedef unsigned char bool;
 typedef unsigned int uint;

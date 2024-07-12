@@ -6,29 +6,29 @@
 #include "utils/array.h"
 
 // Initial size of 100 (100 * sizeof(void *) Bytes)
-#define INITIAL_CAP 128
+#define INITIAL_CAP 104
 
 
 typedef struct array {
   void** data;
   void** _offsetPtr;
-  void** _iteratorPtr;
 
   size_t _size;
   size_t _capacity;
+  size_t _iteratorPos;
 } array;
 
 
 array* mkArray () {
-  array* list = (array*) malloc(sizeof(array));
+  array* list = make(array);
   checkNullPtr(list);
 
-  list->data = (void *) calloc(INITIAL_CAP, sizeof(void *));
+  list->data = cmaken(10, void*);
   checkNullPtr(list->data);
 
   list->_offsetPtr = list->data;
-  list->_iteratorPtr = list->data;
-  list->_capacity = INITIAL_CAP;
+  list->_capacity = INITIAL_CAP * sizeof(void *);
+  list->_iteratorPos = 0;
   list->_size = 0;
 
   return list;
@@ -88,20 +88,17 @@ void* arrGrow (array* list, size_t size) {
 }
 
 void* arrNextItem (array* list) {
-  if (list->_iteratorPtr == NULL) return NULL;
+  if (list->_iteratorPos >= list->_size)
+    return NULL;
 
-  void** item = list->_iteratorPtr;
-
-  if (item == list->_offsetPtr)
-    list->_iteratorPtr = NULL;
-  else
-    list->_iteratorPtr++;
+  void* item = list->data[list->_size];
+  list->_iteratorPos++;
 
   return item;
 }
 
 void arrResetIter (array* list) {
-  list->_iteratorPtr = list->data;
+  list->_iteratorPos = 0;
 }
 
 void arrFree (array* list) {

@@ -3,30 +3,6 @@
 #include <stddef.h>
 #include "lexer/tokens.h"
 
-// -> Macros
-// ---------
-
-/*
-#define TokenLiteral(node) \
-  node->vtable->getTokenLiteral(node)
-*/
-
-#define TokenLiteral(node) _Generic(typeof(node) \
-  )
-
-#define StatementNode(node) \
-  node->vtable->getStatementNode(node)
-
-#define ExpressionNode(node) \
-  node->vtable->getExpressionNode(node)
-
-#define AsString (node) \
-  nodes->vtable->asString(node)
-
-#define INVALID_STATEMENT (parserNode) { \
-  .type = InvalidStatement                  \
-}
-
 // ROOT:
 //  - Statements []Statements{}
 
@@ -34,6 +10,37 @@
 //  - Node { TokenLiteral() string, asString() string }
 //  - Statement { Node + statementNode() }
 //  - Expression { Node + expressionNode() }
+
+
+// -> Macros
+// ---------
+
+#define AsString(node) _Generic((node),                   \
+    identifierNode*: identifierAsString,                  \
+    expressionNode*: expressionAsString,                  \
+    letStatement*: letAsString,                           \
+    retStatement*: returnAsString,                        \
+    rootNode*: rootAsString,                              \
+    invalidNode*: invalidAsString,                        \
+    nodeWrapper*: wrapperAsString                         \
+  )(node)
+
+#define TokenLiteral(node) _Generic((node),               \
+    rootNode: rootTokenLiteral                            \
+  )(&node)
+
+#define WrapNode(node) _Generic((node),                   \
+    rootNode*: wrapRootNode,                              \
+    identifierNode*: wrapIdentifierNode,                  \
+    expressionNode*: wrapExpressionNode,                  \
+    letStatement*: wrapLetNode,                           \
+    retStatement*: wrapReturnNode,                        \
+    invalidNode*: wrapInvalidNode                         \
+  )(node)
+
+#define INVALID_STATEMENT (nodeWrapper) {                 \
+  .type = InvalidStatement                                \
+}
 
 // -> Constants
 // ------------
@@ -52,66 +59,79 @@ typedef enum {
 // -> Types
 // --------
 
-typedef struct parserNode {
+typedef struct nodeWrapper {
   nodeType type;
-  token token;
-
-  void* meta;
-} parserNode;
+  void* node;
+} nodeWrapper;
 
 typedef struct rootNode {
-  parserNode* nodes;
-  parserNode* offsetPtr;
-  parserNode* iteratorPtr;
+  nodeWrapper* nodes;
+  nodeWrapper* offsetPtr;
 
   size_t capacity;
   size_t length;
+  size_t iteratorPos;
 } rootNode;
 
 typedef struct identifierNode {
+  token token;
   cstring value;
 } identifierNode;
 
 typedef struct expressionNode {
+  token token;
   cstring value;
 } expressionNode;
 
 typedef struct letStatement {
-  // Identifier
-  parserNode name;
-  // Expression
-  parserNode value;
+  token token;
+  identifierNode* name;
+  expressionNode* value;
 } letStatement;
 
 typedef struct retStatement {
-  // Expression
-  parserNode value;
+  token token;
+  expressionNode* value;
 } retStatement;
 
+typedef struct invalidNode {
+  token token;
+} invalidNode;
 
 // -> Functions
 // ------------
 
-parserNode* mkRootNode ();
-
-void* growRootNode (parserNode* node);
-
-void pushNode (parserNode* rootNode, parserNode node);
-
-void* iterateNodes (parserNode* rootNode);
-
-parserNode* getNode(parserNode* rootNode, uint offset);
+rootNode* mkRootNode ();
+void* growRootNode (rootNode* rNode);
+void pushNode (rootNode* rNode, nodeWrapper node);
+nodeWrapper* getNode (rootNode* rNode, uint offset);
+nodeWrapper* nextNode (rootNode* rNode);
+nodeWrapper* iterator (rootNode* rNode);
+void resetIterator (rootNode* rNode);
 
 
-parserNode* mkProgramNode ();
-
-parserNode mkLetStatement (token letTkn, token idTkn);
-
-parserNode mkRetStatement (token retTkn);
-
-parserNode mkIdNode (token tkn);
+letStatement* mkLetStatement (token letTkn, token idTkn);
+retStatement* mkRetStatement (token retTkn);
+identifierNode* mkIdNode (token tkn);
 
 
-cstring getTokenLiteral (parserNode* node);
+cstring rootAsString (rootNode* rNode);
+cstring letAsString (letStatement* node);
+cstring returnAsString (retStatement* node);
+cstring identifierAsString (identifierNode* node);
+cstring expressionAsString (expressionNode* node);
+cstring invalidAsString (invalidNode* node);
+cstring wrapperAsString (nodeWrapper* node);
 
-cstring nodeAsString (parserNode* node);
+
+cstring rootTokenLiteral (rootNode* rNode);
+cstring getTokenLiteral (nodeWrapper* wrapper);
+
+
+nodeWrapper wrapRootNode (rootNode* node);
+nodeWrapper wrapIdentifierNode (identifierNode* node);
+nodeWrapper wrapExpressionNode (expressionNode* node);
+nodeWrapper wrapLetNode (letStatement* node);
+nodeWrapper wrapReturnNode (retStatement* node);
+nodeWrapper wrapInvalidNode (invalidNode* node);
+

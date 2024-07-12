@@ -1,6 +1,3 @@
-T-OUT.D := $(BUILD.D)/tests
-TESTS.D := tests
-
 UTILS.H := \
 	$(INCL.D)/utils/array.h \
 	$(INCL.D)/utils/text.h

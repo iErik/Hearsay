@@ -23,51 +23,52 @@ void TestReturnStatement () {
 
   lexer* lex = mkLexer(input);
   parser* pars = mkParser(lex);
-  parserNode* program = parseProgram(pars);
-  checkParserErrors(pars);
+  //rootNode* program = parseProgram(pars);
 
+  checkParserErrors(pars);
 }
 
 bool testLetStatement (
-  parserNode node,
+  nodeWrapper* wrapper,
   cstring expectedId
 ) {
-  letStatement* letNode = (letStatement *) node.meta;
-  parserNode idNode = (parserNode) letNode->name;
-  token tkn = node.token;
+  letStatement* letNode = (letStatement *) wrapper->node;
+  identifierNode* idNode = letNode->name;
+  token letTkn = letNode->token;
+  token idTkn  = idNode->token;
 
-  expect(node.type == LetStatement,
+  expect(wrapper->type == LetStatement,
     "Statement should be of type LetStatement\n"
     "Expected: %i\n"
     "Received: %i\n",
-    LetStatement, node.type);
+    LetStatement, wrapper->type);
 
-  expect(tkn.type == TknLet,
+  expect(letTkn.type == TknLet,
     "Statement's token.type should be TknLet\n"
     "Expected: %i\n"
     "Received: %i\n",
-    TknLet, tkn.type);
-  expect(strcmp(tkn.literal, "let") == 0,
+    TknLet, letTkn.type);
+  expect(strcmp(letTkn.literal, "let") == 0,
     "Statement's token.literal should be 'let'\n"
     "Expected: %s\n"
     "Received: %s\n",
-    "let", tkn.literal);
+    "let", letTkn.literal);
 
-  expect(strcmp(ident.value, expectedId) == 0,
+  expect(strcmp(idNode->value, expectedId) == 0,
     "Statement's ident.value should match id paramenter\n"
     "Expected: %s\n"
     "Received: %s\n",
-    expectedId, ident.value);
-  expect(strcmp(ident.token.literal, expectedId) == 0,
+    expectedId, idNode->value);
+  expect(strcmp(idTkn.literal, expectedId) == 0,
     "Statement ident.token.literal should match value\n"
     "Expected: %s\n"
     "Received: %s\n",
-    expectedId, ident.token.literal);
-  expect(ident.token.type == TknIdent,
+    expectedId, idTkn.literal);
+  expect(idTkn.type == TknIdent,
     "Statement ident.token.literal should be TknIdent\n"
     "Expected: %i\n"
     "Received: %i\n",
-    TknIdent, ident.token.type);
+    TknIdent, idTkn.type);
 
   return true;
 }
@@ -82,22 +83,22 @@ void TestLetStatements () {
 
   lexer* lex = mkLexer(input);
   parser* pars = mkParser(lex);
-  parserNode* prog = parseProgram(pars);
+  rootNode* prog = parseProgram(pars);
 
   checkParserErrors(pars);
   expect(prog != NULL, "Program Node is NULL!\n");
 
-  expect(prog->statements->length == 3,
+  expect(prog->length == 3,
     "Number of statements parsed should match\n"
     "Expected: %i\n"
     "Received: %i\n",
-    3, prog->statements->length);
+    3, prog->length);
 
   cstring expectIds[] = { "x", "y", "foo" };
 
   for (int i = 0; i < 3; i++) {
     testLetStatement(
-      prog->statements->nodes[i],
+      getNode(prog, i),
       expectIds[i]
     );
   }

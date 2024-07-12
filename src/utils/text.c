@@ -90,4 +90,6 @@ char* subnstr (cstring src, uint begin, uint count) {
   return str;
 }
 
-
+bool streq (cstring fStr, cstring sStr) {
+  return strcmp(fStr, sStr) == 0;
+}

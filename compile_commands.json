@@ -11,8 +11,8 @@
       "build/tokens.o",
       "src/tokens.c"
     ],
-    "directory": "/home/Erik/Documents/nCode/Projects/slack.c/master",
-    "file": "/home/Erik/Documents/nCode/Projects/slack.c/master/src/tokens.c",
-    "output": "/home/Erik/Documents/nCode/Projects/slack.c/master/build/tokens.o"
+    "directory": "/home/Erik/Documents/nCode/Projects/slack.c/fixed-nodes",
+    "file": "/home/Erik/Documents/nCode/Projects/slack.c/fixed-nodes/src/tokens.c",
+    "output": "/home/Erik/Documents/nCode/Projects/slack.c/fixed-nodes/build/tokens.o"
   }
 ]

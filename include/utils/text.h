@@ -64,4 +64,4 @@ void printr (const cstring text, renderTextOpts opts);
 
 char* substr (cstring src, uint being, uint end);
 char* subnstr (cstring src, uint being, uint count);
-
+bool streq (cstring fStr, cstring sStr);

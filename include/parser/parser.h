@@ -29,10 +29,10 @@ bool peekExpect (parser* pars, tokenType type);
 
 bool hasParsingErrors (parser* pars);
 
-parserNode* parseProgram (parser* pars);
+rootNode* parseProgram (parser* pars);
 
-parserNode parseLetStatement (parser* pars);
+nodeWrapper parseLetStatement (parser* pars);
 
-parserNode parseStatement (parser* pars);
+nodeWrapper parseStatement (parser* pars);
 
 cstring listParserErrors (parser* pars);

@@ -6,6 +6,18 @@
 
 #include "parser/nodes.h"
 
+
+// ----------------------------------------------------- //
+// -> Structs / Types                                    //
+// ----------------------------------------------------- //
+
+struct parser;
+
+typedef nodeWrapper (*prefixParserFn)(struct parser* pars);
+typedef nodeWrapper (*infixParserFn)(
+    struct parser* pars,
+    nodeWrapper leftNode);
+
 typedef struct parser {
   lexer* lexer;
   array* errors;
@@ -13,7 +25,15 @@ typedef struct parser {
   token lastToken;
   token currToken;
   token peekToken;
+
+  prefixParserFn prefixParserFns[TKN_LEN];
+  infixParserFn  infixParserFns[TKN_LEN];
 } parser;
+
+
+// ----------------------------------------------------- //
+// -> Functions                                          //
+// ----------------------------------------------------- //
 
 parser* mkParser (lexer* lex);
 
@@ -31,8 +51,22 @@ bool hasParsingErrors (parser* pars);
 
 rootNode* parseProgram (parser* pars);
 
-nodeWrapper parseLetStatement (parser* pars);
+cstring listParserErrors (parser* pars);
+
+void registerPrefixFn (
+  parser* pars,
+  tokenType token,
+  prefixParserFn fn);
+void registerInfixFn (
+  parser* pars,
+  tokenType token,
+  infixParserFn fn);
+
+// ?
 
 nodeWrapper parseStatement (parser* pars);
+nodeWrapper parseLetStatement (parser* pars);
+nodeWrapper parseRetStatement (parser* pars);
+nodeWrapper parseExprStatement (parser* pars);
 
-cstring listParserErrors (parser* pars);
+//nodeWrapper parseExpression (parser* pars);

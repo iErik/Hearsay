@@ -6,6 +6,10 @@
 #include "utils/text.h"
 
 
+// ----------------------------------------------------- //
+// -> Root Node                                          //
+// ----------------------------------------------------- //
+
 rootNode* mkRootNode () {
   rootNode* root = make(rootNode);
   postMalloc(root);
@@ -21,9 +25,7 @@ rootNode* mkRootNode () {
   return root;
 }
 
-void unmkRootNode (rootNode* rNode) {
-
-}
+void unmkRootNode (rootNode* rNode) { }
 
 void* growRootNode (rootNode* rNode) {
   if (rNode->capacity == 0) {
@@ -84,6 +86,10 @@ nodeWrapper* getNode (rootNode* rNode, uint offset) {
 }
 
 
+// ----------------------------------------------------- //
+// -> Parser Nodes                                       //
+// ----------------------------------------------------- //
+
 letStatement* mkLetStatement (token letTkn, token idTkn) {
   if (letTkn.type != TknLet) return NULL;
 
@@ -116,10 +122,25 @@ identifierNode* mkIdNode (token tkn) {
   return node;
 }
 
-void mkExpressionNode () {}
+/*
+expressionNode* mkExpressionNode () {
+  expressionNode* node = make(expressionNode);
 
-// -> AsString
-// -------------------------
+  return node;
+}
+*/
+
+invalidNode* mkInvalidNode (token tkn) {
+  invalidNode* node = make(invalidNode);
+  node->token = tkn;
+
+  return node;
+}
+
+
+// ----------------------------------------------------- //
+// -> Interfaces / Macros                                //
+// ----------------------------------------------------- //
 
 cstring rootAsString (rootNode* rNode) {
   cstring str;
@@ -162,11 +183,13 @@ cstring identifierAsString (identifierNode* node) {
   return node->value;
 }
 
+/*
 cstring expressionAsString (expressionNode* node) {
   if (node == NULL) return "";
 
   return node->value;
 }
+*/
 
 cstring invalidAsString (invalidNode* node) {
   if (node == NULL) return "";
@@ -182,8 +205,10 @@ cstring wrapperAsString (nodeWrapper* wrapper) {
       return rootAsString(wrapper->node);
     case IdentifierNode:
       return identifierAsString(wrapper->node);
+    /*
     case ExpressionNode:
       return expressionAsString(wrapper->node);
+    */
     case LetStatement:
       return letAsString(wrapper->node);
     case ReturnStatement:
@@ -212,8 +237,10 @@ cstring getTokenLiteral (nodeWrapper* wrapper) {
       return rootTokenLiteral(wrapper->node);
     case IdentifierNode:
       return ((identifierNode *) node)->token.literal;
+    /*
     case ExpressionNode:
       return ((expressionNode *) node)->token.literal;
+    */
     case LetStatement:
       return ((letStatement *) node)->token.literal;
     case ReturnStatement:
@@ -241,7 +268,7 @@ nodeWrapper wrapIdentifierNode (identifierNode* node) {
   };
 }
 
-nodeWrapper wrapExpressionNode (expressionNode* node) {
+nodeWrapper wrapExprNode (exprStatement* node) {
   return (nodeWrapper) {
     .type = ExpressionNode,
     .node = node

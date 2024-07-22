@@ -96,12 +96,8 @@ void TestLetStatements () {
 
   cstring expectIds[] = { "x", "y", "foo" };
 
-  for (int i = 0; i < 3; i++) {
-    testLetStatement(
-      getNode(prog, i),
-      expectIds[i]
-    );
-  }
+  for (int i = 0; i < 3; i++)
+    testLetStatement(getNode(prog, i), expectIds[i]);
 }
 
 int main () {

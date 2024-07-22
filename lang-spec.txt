@@ -1,0 +1,10 @@
+( This is a comment )
+< This is a comment >
+
+@function-call | arguments... |
+
+@function-call { arguments... }
+
+@function-call arg1 arg2 arg3
+
+Object@method

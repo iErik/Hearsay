@@ -9,33 +9,23 @@
 #define INITIAL_CAP 104
 
 
-typedef struct array {
-  void** data;
-  void** _offsetPtr;
-
-  size_t _size;
-  size_t _capacity;
-  size_t _iteratorPos;
-} array;
-
-
 array* mkArray () {
   array* list = make(array);
-  checkNullPtr(list);
+  postMalloc(list);
 
   list->data = cmaken(10, void*);
   checkNullPtr(list->data);
 
-  list->_offsetPtr = list->data;
-  list->_capacity = INITIAL_CAP * sizeof(void *);
+  list->_offsetPtr   = list->data;
+  list->_capacity    = INITIAL_CAP * sizeof(void *);
   list->_iteratorPos = 0;
-  list->_size = 0;
+  list->_length      = 0;
 
   return list;
 }
 
 size_t arrLen (array* list) {
-  return list->_size;
+  return list->_length;
 }
 
 void* arrLast (array* list) {
@@ -50,14 +40,14 @@ void* arrPush (array* list, void* data) {
   size_t cap = list->_capacity;
   size_t mincap = cap + sizeof(void *);
 
-  if (cap < mincap) if (arrExpand(list) == NULL)
+  if ((cap < mincap) && (arrExpand(list) == NULL))
     return NULL;
 
-  void** offset = (list->data + list->_size);
+  void** offset = (list->data + list->_length);
 
   *offset = data;
   list->_offsetPtr = offset;
-  list->_size++;
+  list->_length++;
 
   return *offset;
 }
@@ -88,10 +78,10 @@ void* arrGrow (array* list, size_t size) {
 }
 
 void* arrNextItem (array* list) {
-  if (list->_iteratorPos >= list->_size)
+  if (list->_iteratorPos >= list->_length)
     return NULL;
 
-  void* item = list->data[list->_size];
+  void* item = list->data[list->_length];
   list->_iteratorPos++;
 
   return item;

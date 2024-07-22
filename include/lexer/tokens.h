@@ -2,15 +2,20 @@
 
 #include "common.h"
 
+
+// ----------------------------------------------------- //
+// -> Enums / Constants                                  //
+// ----------------------------------------------------- //
+
 typedef enum {
-  TknIllegal,
+  TknIllegal = 0,
   TknEOF,
 
   // Identifiers
   TknIdent,
   TknInt,
 
-  // Literals / Operators
+  // Operators
   TknAssign,
   TknPlus,
   TknMinus,
@@ -46,16 +51,41 @@ typedef enum {
   TknElse,
 
   TknTrue,
-  TknFalse
+  TknFalse,
+
+  TKN_LEN
 } tokenType;
 
-//typedef const char* tokenType;
+typedef enum {
+  PrecLowest = 0,
+  // ==
+  PrecEquals,
+  // > or <
+  PrecLessGreater,
+  // +
+  PrecSum,
+  // *
+  PrecProduct,
+  // -X or !X
+  PrecPrefix,
+  // myFunction(X)
+  PrevCall,
+} opPrecedence;
+
+
+// ----------------------------------------------------- //
+// -> Structs / Types                                    //
+// ----------------------------------------------------- //
 
 typedef struct token {
   tokenType type;
   cstring literal;
 } token;
 
+
+// ----------------------------------------------------- //
+// -> Functions                                          //
+// ----------------------------------------------------- //
 
 token newToken (tokenType type, char* literal);
 tokenType lookupIdent (cstring ident);
@@ -64,3 +94,5 @@ bool isWhitespace (char ch);
 bool isLetter (char ch);
 bool isDigit (char ch);
 bool tokenIs (token tkn, tokenType type);
+
+opPrecedence tknPrecedence (token tkn);

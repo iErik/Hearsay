@@ -43,6 +43,25 @@ bool tokenIs (token tkn, tokenType type) {
   return tkn.type == type;
 }
 
+opPrecedence tknPrecedence (token tkn) {
+  switch (tkn.type) {
+    case TknEQ:
+    case TknNEQ:
+      return PrecEquals;
+    case TknLT:
+    case TknGT:
+      return PrecLessGreater;
+    case TknPlus:
+    case TknMinus:
+      return PrecSum;
+    case TknSlash:
+    case TknAsterisk:
+      return PrecProduct;
+    default:
+      return PrecLowest;
+  }
+}
+
 tokenType lookupIdent (cstring identifier) {
   size_t keyLen = sizeof(KEYWORDS) / sizeof(token);
 

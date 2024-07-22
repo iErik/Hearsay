@@ -5,7 +5,14 @@
 #include "common.h"
 
 
-typedef struct array array;
+typedef struct array {
+  void** data;
+  void** _offsetPtr;
+
+  size_t _length;
+  size_t _capacity;
+  size_t _iteratorPos;
+} array;
 
 
 array* mkArray ();

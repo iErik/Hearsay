@@ -12,12 +12,12 @@
 //  - Expression { Node + expressionNode() }
 
 
-// -> Macros
-// ---------
+// ----------------------------------------------------- //
+// -> Macros                                             //
+// ----------------------------------------------------- //
 
 #define AsString(node) _Generic((node),                   \
     identifierNode*: identifierAsString,                  \
-    expressionNode*: expressionAsString,                  \
     letStatement*: letAsString,                           \
     retStatement*: returnAsString,                        \
     rootNode*: rootAsString,                              \
@@ -32,18 +32,20 @@
 #define WrapNode(node) _Generic((node),                   \
     rootNode*: wrapRootNode,                              \
     identifierNode*: wrapIdentifierNode,                  \
-    expressionNode*: wrapExpressionNode,                  \
     letStatement*: wrapLetNode,                           \
     retStatement*: wrapReturnNode,                        \
+    exprStatement*: wrapExprNode,                         \
     invalidNode*: wrapInvalidNode                         \
   )(node)
 
 #define INVALID_STATEMENT (nodeWrapper) {                 \
-  .type = InvalidStatement                                \
+  .type = InvalidStatement,                               \
 }
 
-// -> Constants
-// ------------
+
+// ----------------------------------------------------- //
+// -> Enums / Constants                                  //
+// ----------------------------------------------------- //
 
 typedef enum {
   RootNode,
@@ -51,55 +53,135 @@ typedef enum {
   IdentifierNode,
   ExpressionNode,
 
+  IfExpression,
+  FunctionLiteral,
+  IntegerLiteral,
+  InfixExpression,
+  PrefixExpression,
+  BooleanExpression,
+
   LetStatement,
   ReturnStatement,
   InvalidStatement
 } nodeType;
 
-// -> Types
-// --------
+
+// ----------------------------------------------------- //
+// -> NodeList (Temporary)                               //
+// ----------------------------------------------------- //
+
+typedef struct nodeWrapper nodeWrapper;
+
+typedef struct nodeList {
+  nodeWrapper* nodes;
+  nodeWrapper* offsetPtr;
+
+  size_t       length;
+  size_t       capacity;
+  size_t       iteratorPos;
+} nodeList;
+
+
+nodeList*    nl_new      ();
+nodeWrapper* nl_get      (nodeList* nList, uint offset);
+nodeWrapper* nl_nextNode (nodeList* nList);
+nodeWrapper* nl_iterator (nodeList* nList);
+
+void  nl_destroy       (nodeList** nList);
+void* nl_grow          (nodeList* nList);
+void  nl_push          (nodeList* nList, nodeWrapper node);
+void  nl_resetIterator (nodeList* nList);
+
+// ----------------------------------------------------- //
+// -> Structs / Types                                    //
+// ----------------------------------------------------- //
 
 typedef struct nodeWrapper {
   nodeType type;
-  void* node;
+  void*    node;
 } nodeWrapper;
+
+typedef nodeWrapper exprWrapper;
+
 
 typedef struct rootNode {
   nodeWrapper* nodes;
   nodeWrapper* offsetPtr;
 
-  size_t capacity;
-  size_t length;
-  size_t iteratorPos;
+  size_t       length;
+  size_t       capacity;
+  size_t       iteratorPos;
 } rootNode;
 
-typedef struct identifierNode {
-  token token;
-  cstring value;
-} identifierNode;
-
-typedef struct expressionNode {
-  token token;
-  cstring value;
-} expressionNode;
-
-typedef struct letStatement {
-  token token;
-  identifierNode* name;
-  expressionNode* value;
-} letStatement;
-
-typedef struct retStatement {
-  token token;
-  expressionNode* value;
-} retStatement;
 
 typedef struct invalidNode {
   token token;
 } invalidNode;
 
-// -> Functions
-// ------------
+typedef struct identifierNode {
+  token   token;
+  cstring value;
+} identifierNode;
+
+typedef struct blockStatement {
+  nodeList* statements;
+} blockStatement;
+
+typedef struct exprStatement {
+  token       token;
+  exprWrapper expression;
+} exprStatement;
+
+typedef struct letStatement {
+  token          token;
+  identifierNode name;
+  exprWrapper    value;
+} letStatement;
+
+typedef struct retStatement {
+  token        token;
+  exprWrapper* value;
+} retStatement;
+
+typedef struct prefixExpr {
+  token       token;
+  cstring     operator;
+  exprWrapper right;
+} prefixExpr;
+
+typedef struct infixExpr {
+  token       token;
+  exprWrapper left;
+  cstring     operator;
+  exprWrapper right;
+} infixExpr;
+
+typedef struct ifExpr {
+  token          token;
+  cstring        condition;
+  blockStatement body;
+  blockStatement elseBlock;
+} ifExpr;
+
+typedef struct boolExpr {
+  token token;
+} boolExpr;
+
+typedef struct fnExpr {
+  token           token;
+  identifierNode* params;
+  blockStatement  body;
+} fnExpr;
+
+typedef struct integerLiteral {
+  token token;
+  int   value;
+} integerLiteral;
+
+
+// ----------------------------------------------------- //
+// -> Functions                                          //
+// ----------------------------------------------------- //
 
 rootNode* mkRootNode ();
 void* growRootNode (rootNode* rNode);
@@ -113,13 +195,15 @@ void resetIterator (rootNode* rNode);
 letStatement* mkLetStatement (token letTkn, token idTkn);
 retStatement* mkRetStatement (token retTkn);
 identifierNode* mkIdNode (token tkn);
+//expressionNode* mkExpressionNode ();
+invalidNode* mkInvalidNode (token tkn);
 
 
 cstring rootAsString (rootNode* rNode);
 cstring letAsString (letStatement* node);
 cstring returnAsString (retStatement* node);
 cstring identifierAsString (identifierNode* node);
-cstring expressionAsString (expressionNode* node);
+//cstring expressionAsString (expressionNode* node);
 cstring invalidAsString (invalidNode* node);
 cstring wrapperAsString (nodeWrapper* node);
 
@@ -130,7 +214,8 @@ cstring getTokenLiteral (nodeWrapper* wrapper);
 
 nodeWrapper wrapRootNode (rootNode* node);
 nodeWrapper wrapIdentifierNode (identifierNode* node);
-nodeWrapper wrapExpressionNode (expressionNode* node);
+//nodeWrapper wrapExpressionNode (expressionNode* node);
+exprWrapper wrapExprNode (void* node);
 nodeWrapper wrapLetNode (letStatement* node);
 nodeWrapper wrapReturnNode (retStatement* node);
 nodeWrapper wrapInvalidNode (invalidNode* node);

@@ -4,6 +4,11 @@
 
 #define INITIAL_ROOT_CAPACITY (10 * sizeof(nodeWrapper))
 
+
+// --------------------------------------------------------
+// -> Root Node
+// --------------------------------------------------------
+
 void testGrowRootNode () {
   testing("growRootNode");
 
@@ -224,6 +229,11 @@ void TestRootNode () {
   if (root != NULL) free(root);
 }
 
+
+// --------------------------------------------------------
+// -> Let Statement
+// --------------------------------------------------------
+
 void TestLetStatement () {
   testing("LetStatement");
 
@@ -272,6 +282,11 @@ void TestLetStatement () {
   if (letNode != NULL) free(letNode);
 }
 
+
+// --------------------------------------------------------
+// -> Return Statement
+// --------------------------------------------------------
+
 void TestReturnStatement () {
   testing("ReturnStatement");
 
@@ -297,6 +312,11 @@ void TestReturnStatement () {
 
   if (retNode != NULL) free(retNode);
 }
+
+
+// --------------------------------------------------------
+// -> Identifier Node
+// --------------------------------------------------------
 
 void TestIdentifierNode () {
   testing("IdentifierNode");
@@ -329,7 +349,14 @@ void TestIdentifierNode () {
   if (idNode != NULL) free(idNode);
 }
 
+
+// --------------------------------------------------------
+// -> Node Macros
+// --------------------------------------------------------
+
 void TestAsString () {
+  testing("As String Node Macro");
+
   cstring letStr = "let variable = 4;";
   //cstring retStr = "ret variable;";
   //cstring rootStr = "let variable = 4; ret variable;";

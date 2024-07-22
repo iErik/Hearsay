@@ -6,12 +6,37 @@
 #include "parser/parser.h"
 
 
+// Prefix Fns
+nodeWrapper parseIdentifier (parser* pars);
+nodeWrapper parseIntegerLiteral (parser* pars);
+nodeWrapper parsePrefix (parser* pars);
+nodeWrapper parseInfix (parser* pars, nodeWrapper left);
+
+// ----------------------------------------------------- //
+// -> Parser                                             //
+// ----------------------------------------------------- //
+
 parser* mkParser (lexer* lex) {
   parser* pars = cmake(parser);
   checkNullPtr(pars);
 
   pars->errors = mkArray();
   pars->lexer = lex;
+
+  registerPrefixFn(pars, TknIdent, parseIdentifier);
+  registerPrefixFn(pars, TknInt, parseIntegerLiteral);
+  registerPrefixFn(pars, TknPlus, parsePrefix);
+  registerPrefixFn(pars, TknMinus, parsePrefix);
+  registerPrefixFn(pars, TknBang, parsePrefix);
+
+  registerInfixFn(pars, TknPlus, parseInfix);
+  registerInfixFn(pars, TknMinus, parseInfix);
+  registerInfixFn(pars, TknSlash, parseInfix);
+  registerInfixFn(pars, TknAsterisk, parseInfix);
+  registerInfixFn(pars, TknEQ, parseInfix);
+  registerInfixFn(pars, TknNEQ, parseInfix);
+  registerInfixFn(pars, TknLT, parseInfix);
+  registerInfixFn(pars, TknGT, parseInfix);
 
   return pars;
 }
@@ -42,6 +67,30 @@ bool peekExpect (parser* pars, tokenType type) {
   }
 }
 
+void peekError (parser* pars, tokenType expectedType) {
+  cstring error = interpol(
+    "Expected next token to be %i, got %i instead",
+    expectedType, pars->peekToken.type);
+
+  arrPush(pars->errors, error);
+}
+
+void pushParserError (parser* pars, cstring message) {
+  arrPush(pars->errors, message);
+}
+
+opPrecedence peekPrecedence (parser* pars) {
+  return tknPrecedence(pars->peekToken);
+}
+
+opPrecedence currPrecedence (parser* pars) {
+  return tknPrecedence(pars->currToken);
+}
+
+bool hasParsingErrors (parser* pars) {
+  return arrLen(pars->errors) > 0;
+}
+
 cstring listParserErrors (parser* pars) {
   if (!hasParsingErrors(pars)) return "";
 
@@ -54,18 +103,6 @@ cstring listParserErrors (parser* pars) {
       (cstring) arrGet(pars->errors, i));
 
   return errors;
-}
-
-bool hasParsingErrors (parser* pars) {
-  return arrLen(pars->errors) > 0;
-}
-
-void peekError (parser* pars, tokenType expectedType) {
-  cstring error = interpol(
-    "Expected next token to be %i, got %i instead",
-    expectedType, pars->peekToken.type);
-
-  arrPush(pars->errors, error);
 }
 
 rootNode* parseProgram (parser* pars) {
@@ -83,9 +120,35 @@ rootNode* parseProgram (parser* pars) {
   return root;
 }
 
-expressionNode* prefixParser () {}
+void registerPrefixFn (
+  parser* parser,
+  tokenType token,
+  prefixParserFn fn
+) { parser->prefixParserFns[token] = fn; }
 
-expressionNode* infixParser () {}
+void registerInfixFn (
+  parser* parser,
+  tokenType token,
+  infixParserFn fn
+) { parser->infixParserFns[token] = fn; }
+
+
+// ----------------------------------------------------- //
+// -> Parser                                             //
+// ----------------------------------------------------- //
+
+nodeWrapper parseStatement (parser* pars) {
+  switch (pars->currToken.type) {
+    case TknLet:
+      return parseLetStatement(pars);
+    case TknReturn:
+      return parseRetStatement(pars);
+    default:
+      return parseExprStatement(pars);
+  }
+
+  return INVALID_STATEMENT;
+}
 
 nodeWrapper parseLetStatement (parser* pars) {
   token letTkn = pars->currToken;
@@ -119,69 +182,112 @@ nodeWrapper parseRetStatement (parser* pars) {
   return WrapNode(retStat);
 }
 
-nodeWrapper parseStatement (parser* pars) {
-  switch (pars->currToken.type) {
-    case TknIllegal:
-      break;
-    case TknEOF:
-      break;
-    case TknIdent:
-      break;
-    case TknInt:
-      break;
-    case TknAssign:
-      break;
-    case TknPlus:
-      break;
-    case TknMinus:
-      break;
-    case TknAsterisk:
-      break;
-    case TknSlash:
-      break;
-    case TknBang:
-      break;
-    case TknQuestion:
-      break;
-    case TknLT:
-      break;
-    case TknGT:
-      break;
-    case TknEQ:
-      break;
-    case TknNEQ:
-      break;
-    case TknBackslash:
-      break;
-    case TknComma:
-      break;
-    case TknSemicolon:
-      break;
-    case TknLParen:
-      break;
-    case TknRParen:
-      break;
-    case TknLBrace:
-      break;
-    case TknRBrace:
-      break;
-    case TknLet:
-      return parseLetStatement(pars);
-    case TknFunction:
-      break;
-    case TknReturn:
-      return parseRetStatement(pars);
-    case TknIf:
-      break;
-    case TknElif:
-      break;
-    case TknElse:
-      break;
-    case TknTrue:
-      break;
-    case TknFalse:
-      break;
+void noPrefixParseFnError (parser* pars, tokenType tkn) {
+  pushParserError(pars, interpol(
+    "No prefix parse function for %s found", tkn));
+}
+
+exprWrapper parseExpression (
+  parser* pars,
+  opPrecedence precedence
+) {
+  token tkn = pars->currToken;
+  tokenType tknType = tkn.type;
+
+  prefixParserFn prefixFn = pars->prefixParserFns[tknType];
+
+  if (prefixFn == NULL) {
+    noPrefixParseFnError(pars, tknType);
+    return WrapNode(mkInvalidNode(tkn));
   }
 
-  return INVALID_STATEMENT;
+  nodeWrapper leftExpr = prefixFn(pars);
+
+  while (!peekTknIs(pars, TknSemicolon) &&
+          precedence < peekPrecedence(pars))
+  {
+    infixParserFn infixFn =
+      pars->infixParserFns[pars->peekToken.type];
+
+    if (infixFn == NULL)
+      return leftExpr;
+
+    advanceParser(pars);
+
+    leftExpr = infixFn(pars, leftExpr);
+  }
+
+  return leftExpr;
 }
+
+nodeWrapper parsePrefix (parser* pars) {
+  prefixExpr* node = make(prefixExpr);
+
+  node->token      = pars->currToken;
+  node->operator   = pars->currToken.literal;
+
+  advanceParser(pars);
+  node->right = parseExpression(pars, PrecPrefix);
+
+  return (nodeWrapper) {
+    .type = PrefixExpression,
+    .node = node
+  };
+}
+
+nodeWrapper parseInfix (parser* pars, nodeWrapper left) {
+  infixExpr* node = make(infixExpr);
+
+  node->token     = pars->currToken;
+  node->operator  = pars->currToken.literal;
+  node->left      = left;
+
+  opPrecedence precedence = currPrecedence(pars);
+  advanceParser(pars);
+  node->right = parseExpression(pars, precedence);
+
+  return (nodeWrapper) {
+    .type = InfixExpression,
+    .node = node
+  };
+}
+
+nodeWrapper parseIfExpr (parser* pars) { }
+
+nodeWrapper parseIdentifier (parser* pars) {
+  return WrapNode(mkIdNode(pars->currToken));
+}
+
+nodeWrapper parseIntegerLiteral (parser* pars) {
+  integerLiteral* lit = make(integerLiteral);
+
+  lit->token = pars->currToken;
+  lit->value = atoi(pars->currToken.literal);
+
+  return (nodeWrapper) {
+    .type = IntegerLiteral,
+    .node = lit
+  };
+}
+
+nodeWrapper parseBlockStatement (parser* pars) { }
+
+nodeWrapper parseFunctionLiteral (parser* pars) { }
+
+nodeWrapper parseBooleanLiteral (parser* pars) { }
+
+nodeWrapper parseExprStatement (parser* pars) {
+  exprStatement* node = make(exprStatement);
+
+  node->token = pars->currToken;
+  node->expression = parseExpression(pars, PrecLowest);
+
+  if (peekTknIs(pars, TknSemicolon))
+    advanceParser(pars);
+
+  return (nodeWrapper) {
+    .type = ExpressionNode,
+    .node = node
+  };
+}
+

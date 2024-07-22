@@ -7,7 +7,6 @@
 #define true 1
 
 #define checkNullPtr(var) if (var == NULL) return NULL;
-
 #define postMalloc(var) if (var == NULL) return NULL;
 
 #define make(T) (T *) malloc(sizeof(T))

@@ -1,3 +1,7 @@
+T-OUT.D := $(BUILD.D)/tests
+TESTS.D := tests
+
+
 UTILS.H := \
 	$(INCL.D)/utils/array.h \
 	$(INCL.D)/utils/text.h
@@ -17,6 +21,7 @@ PARSER.H := \
 	$(INCL.D)/parser/parser.h
 PARSER.O := \
 	$(OBJ.D)/parser.o \
+	$(OBJ.D)/nodeList.o \
 	$(OBJ.D)/nodes.o
 
 REPL.O := \
@@ -59,7 +64,7 @@ REPL_DEPS := \
 	$(LEXER.O) \
 	$(PARSER.O) \
 	$(REPL.O) \
-	$(TESTS.D)/repl.c
+	$(TESTS.D)/repl/repl.c
 $(T-OUT.D)/repl: $(COMMON_DEPS) $(REPL_DEPS)
 	@$(TCMD) -o $@ $^
 	@chmod +x $@
@@ -68,14 +73,14 @@ $(T-OUT.D)/repl: $(COMMON_DEPS) $(REPL_DEPS)
 PARSER_DEPS := \
 	$(PARSER.O) \
 	$(LEXER.O) \
-	$(TESTS.D)/parser.c
+	$(TESTS.D)/parser/parser.c
 $(T-OUT.D)/parser: $(COMMON_DEPS) $(PARSER_DEPS)
 	@$(TCMD) -o $@ $^
 	@chmod +x $@
 
 NODES_DEPS := \
 	$(OBJ.D)/nodes.o \
-	$(TESTS.D)/nodes.c
+	$(TESTS.D)/parser/nodes.c
 $(T-OUT.D)/nodes: $(COMMON_DEPS) $(NODES_DEPS)
 	@$(TCMD) -o $@ $^
 	@chmod +x $@
@@ -83,14 +88,14 @@ $(T-OUT.D)/nodes: $(COMMON_DEPS) $(NODES_DEPS)
 
 LEXER_DEPS := \
 	$(LEXER.O) \
-	$(TESTS.D)/lexer.c
+	$(TESTS.D)/lexer/lexer.c
 $(T-OUT.D)/lexer: $(COMMON_DEPS) $(LEXER_DEPS)
 	@$(TCMD) -o $@ $^
 	@chmod +x $@
 
 TOKENS_DEPS := \
 	$(OBJ.D)/tokens.o \
-	$(TESTS.D)/tokens.c
+	$(TESTS.D)/lexer/tokens.c
 $(T-OUT.D)/tokens: $(COMMON_DEPS) $(TOKENS_DEPS)
 	@$(TCMD) -o $@ $^
 	@chmod +x $@

@@ -3,15 +3,6 @@
 #include <stddef.h>
 #include "lexer/tokens.h"
 
-// ROOT:
-//  - Statements []Statements{}
-
-// Interfaces:
-//  - Node { TokenLiteral() string, asString() string }
-//  - Statement { Node + statementNode() }
-//  - Expression { Node + expressionNode() }
-
-
 // ----------------------------------------------------- //
 // -> Macros                                             //
 // ----------------------------------------------------- //
@@ -22,7 +13,7 @@
     retStatement*: returnAsString,                        \
     rootNode*: rootAsString,                              \
     invalidNode*: invalidAsString,                        \
-    nodeWrapper*: wrapperAsString                         \
+    nodeWrapper: wrapperAsString                         \
   )(node)
 
 #define TokenLiteral(node) _Generic((node),               \
@@ -40,8 +31,8 @@
 
 #define INVALID_STATEMENT (nodeWrapper) {                 \
   .type = InvalidStatement,                               \
+  .node = NULL                                            \
 }
-
 
 // ----------------------------------------------------- //
 // -> Enums / Constants                                  //
@@ -52,23 +43,29 @@ typedef enum {
 
   IdentifierNode,
   ExpressionNode,
+  ExpressionGroupNode,
 
-  IfExpression,
-  FunctionLiteral,
+  BooleanLiteral,
   IntegerLiteral,
   InfixExpression,
+
+  FunctionExpression,
+  IfExpression,
   PrefixExpression,
   BooleanExpression,
 
   LetStatement,
   ReturnStatement,
+  BlockStatement,
   InvalidStatement
 } nodeType;
 
 
 // ----------------------------------------------------- //
-// -> NodeList (Temporary)                               //
+// -> NodeList                                           //
 // ----------------------------------------------------- //
+
+#define NODE_LIST_INIT_CAP 5
 
 typedef struct nodeWrapper nodeWrapper;
 
@@ -80,7 +77,6 @@ typedef struct nodeList {
   size_t       capacity;
   size_t       iteratorPos;
 } nodeList;
-
 
 nodeList*    nl_new      ();
 nodeWrapper* nl_get      (nodeList* nList, uint offset);
@@ -101,18 +97,9 @@ typedef struct nodeWrapper {
   void*    node;
 } nodeWrapper;
 
-typedef nodeWrapper exprWrapper;
-
-
 typedef struct rootNode {
-  nodeWrapper* nodes;
-  nodeWrapper* offsetPtr;
-
-  size_t       length;
-  size_t       capacity;
-  size_t       iteratorPos;
+  nodeList* nodes;
 } rootNode;
-
 
 typedef struct invalidNode {
   token token;
@@ -129,53 +116,54 @@ typedef struct blockStatement {
 
 typedef struct exprStatement {
   token       token;
-  exprWrapper expression;
+  nodeWrapper expression;
 } exprStatement;
 
 typedef struct letStatement {
-  token          token;
-  identifierNode name;
-  exprWrapper    value;
+  token           token;
+  identifierNode  name;
+  nodeWrapper     value;
 } letStatement;
 
 typedef struct retStatement {
-  token        token;
-  exprWrapper* value;
+  token       token;
+  nodeWrapper value;
 } retStatement;
 
 typedef struct prefixExpr {
   token       token;
   cstring     operator;
-  exprWrapper right;
+  nodeWrapper right;
 } prefixExpr;
 
 typedef struct infixExpr {
   token       token;
-  exprWrapper left;
+  nodeWrapper left;
   cstring     operator;
-  exprWrapper right;
+  nodeWrapper right;
 } infixExpr;
 
 typedef struct ifExpr {
-  token          token;
-  cstring        condition;
-  blockStatement body;
-  blockStatement elseBlock;
+  token       token;
+  nodeWrapper condition;
+  nodeWrapper body;
+  nodeWrapper elseBlock;
 } ifExpr;
 
 typedef struct boolExpr {
   token token;
+  unsigned char value;
 } boolExpr;
 
 typedef struct fnExpr {
-  token           token;
-  identifierNode* params;
-  blockStatement  body;
+  token       token;
+  nodeWrapper params;
+  nodeWrapper body;
 } fnExpr;
 
 typedef struct integerLiteral {
-  token token;
-  int   value;
+  token  token;
+  double value;
 } integerLiteral;
 
 
@@ -195,7 +183,6 @@ void resetIterator (rootNode* rNode);
 letStatement* mkLetStatement (token letTkn, token idTkn);
 retStatement* mkRetStatement (token retTkn);
 identifierNode* mkIdNode (token tkn);
-//expressionNode* mkExpressionNode ();
 invalidNode* mkInvalidNode (token tkn);
 
 
@@ -203,9 +190,8 @@ cstring rootAsString (rootNode* rNode);
 cstring letAsString (letStatement* node);
 cstring returnAsString (retStatement* node);
 cstring identifierAsString (identifierNode* node);
-//cstring expressionAsString (expressionNode* node);
 cstring invalidAsString (invalidNode* node);
-cstring wrapperAsString (nodeWrapper* node);
+cstring wrapperAsString (nodeWrapper node);
 
 
 cstring rootTokenLiteral (rootNode* rNode);
@@ -214,8 +200,7 @@ cstring getTokenLiteral (nodeWrapper* wrapper);
 
 nodeWrapper wrapRootNode (rootNode* node);
 nodeWrapper wrapIdentifierNode (identifierNode* node);
-//nodeWrapper wrapExpressionNode (expressionNode* node);
-exprWrapper wrapExprNode (void* node);
+nodeWrapper wrapExprNode (void* node);
 nodeWrapper wrapLetNode (letStatement* node);
 nodeWrapper wrapReturnNode (retStatement* node);
 nodeWrapper wrapInvalidNode (invalidNode* node);

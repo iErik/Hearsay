@@ -15,8 +15,8 @@ struct parser;
 
 typedef nodeWrapper (*prefixParserFn)(struct parser* pars);
 typedef nodeWrapper (*infixParserFn)(
-    struct parser* pars,
-    nodeWrapper leftNode);
+  struct parser* pars,
+  nodeWrapper leftNode);
 
 typedef struct parser {
   lexer* lexer;

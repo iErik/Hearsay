@@ -21,6 +21,17 @@ const token KEYWORDS[] = {
 // -> Functions
 // ------------
 
+token newToken (tokenType type, char* literal) {
+  token tkn = { type };
+  int length = strlen(literal) + 1;
+  tkn.literal = (cstring) malloc(length * sizeof(char));
+
+  memset(tkn.literal, '\0', length);
+  strcpy(tkn.literal, literal);
+
+  return tkn;
+}
+
 bool isLetter (char ch) {
   return
     ('a' <= ch && ch <= 'z') ||
@@ -73,14 +84,4 @@ tokenType lookupIdent (cstring identifier) {
   return TknIdent;
 }
 
-token newToken (tokenType type, char* literal) {
-  token tkn = { type };
-  int length = strlen(literal) + 1;
-  tkn.literal = (cstring) malloc(length * sizeof(char));
-
-  memset(tkn.literal, '\0', length);
-  strcpy(tkn.literal, literal);
-
-  return tkn;
-}
 

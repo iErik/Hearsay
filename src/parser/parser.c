@@ -6,11 +6,15 @@
 #include "parser/parser.h"
 
 
+nodeWrapper parseExpression (
+  parser* pars, opPrecedence prec);
+
 // Prefix Fns
 nodeWrapper parseIdentifier (parser* pars);
 nodeWrapper parseIntegerLiteral (parser* pars);
 nodeWrapper parsePrefix (parser* pars);
 nodeWrapper parseInfix (parser* pars, nodeWrapper left);
+nodeWrapper parseGroupedExpression (parser* pars);
 
 // ----------------------------------------------------- //
 // -> Parser                                             //
@@ -28,6 +32,7 @@ parser* mkParser (lexer* lex) {
   registerPrefixFn(pars, TknPlus, parsePrefix);
   registerPrefixFn(pars, TknMinus, parsePrefix);
   registerPrefixFn(pars, TknBang, parsePrefix);
+  registerPrefixFn(pars, TknLParen, parseGroupedExpression);
 
   registerInfixFn(pars, TknPlus, parseInfix);
   registerInfixFn(pars, TknMinus, parseInfix);
@@ -37,6 +42,10 @@ parser* mkParser (lexer* lex) {
   registerInfixFn(pars, TknNEQ, parseInfix);
   registerInfixFn(pars, TknLT, parseInfix);
   registerInfixFn(pars, TknGT, parseInfix);
+
+  // Fix it;
+  advanceParser(pars);
+  advanceParser(pars);
 
   return pars;
 }
@@ -132,9 +141,8 @@ void registerInfixFn (
   infixParserFn fn
 ) { parser->infixParserFns[token] = fn; }
 
-
 // ----------------------------------------------------- //
-// -> Parser                                             //
+// -> Node Parsing                                       //
 // ----------------------------------------------------- //
 
 nodeWrapper parseStatement (parser* pars) {
@@ -150,44 +158,65 @@ nodeWrapper parseStatement (parser* pars) {
   return INVALID_STATEMENT;
 }
 
+
 nodeWrapper parseLetStatement (parser* pars) {
-  token letTkn = pars->currToken;
+  letStatement* letStm = make(letStatement);
+
+  letStm->token = pars->currToken;
 
   if (!peekExpect(pars, TknIdent))
     return INVALID_STATEMENT;
 
-  token idTkn = pars->currToken;
+  letStm->name = (identifierNode) {
+    .token = pars->currToken,
+    .value = pars->currToken.literal
+  };
 
   if (!peekExpect(pars, TknAssign))
     return INVALID_STATEMENT;
 
-  letStatement* letNode = mkLetStatement(letTkn, idTkn);
+  advanceParser(pars);
 
-  while (!tokenIs(pars->currToken, TknSemicolon))
+  letStm->value = parseExpression(pars, PrecLowest);
+
+  if (peekTknIs(pars, TknSemicolon))
     advanceParser(pars);
 
-  return WrapNode(letNode);
+  return (nodeWrapper) {
+    .type = LetStatement,
+    .node = letStm
+  };
 }
 
+
 nodeWrapper parseRetStatement (parser* pars) {
-  token retTkn = pars->currToken;
+  retStatement* retState = make(retStatement);
+  retState->token = pars->currToken;
 
   advanceParser(pars);
 
+  retState->value = parseExpression(pars, PrecLowest);
+
   while (!tokenIs(pars->currToken, TknSemicolon))
     advanceParser(pars);
 
-  retStatement* retStat = mkRetStatement(retTkn);
-
-  return WrapNode(retStat);
+  return (nodeWrapper) {
+    .type = ReturnStatement,
+    .node = retState
+  };
 }
+
 
 void noPrefixParseFnError (parser* pars, tokenType tkn) {
   pushParserError(pars, interpol(
-    "No prefix parse function for %s found", tkn));
+    "No prefix parse function for %d found", tkn));
 }
 
-exprWrapper parseExpression (
+// ----------------------------------------------------- //
+// -> Expressions                                        //
+// ----------------------------------------------------- //
+
+nodeWrapper parseExpression (
   parser* pars,
   opPrecedence precedence
 ) {
@@ -220,6 +249,46 @@ exprWrapper parseExpression (
   return leftExpr;
 }
 
+nodeWrapper parseExprStatement (parser* pars) {
+  exprStatement* node = make(exprStatement);
+
+  node->token = pars->currToken;
+  node->expression = parseExpression(pars, PrecLowest);
+
+  if (peekTknIs(pars, TknSemicolon))
+    advanceParser(pars);
+
+  return (nodeWrapper) {
+    .type = ExpressionNode,
+    .node = node
+  };
+}
+
+// -> Block Statements                                   //
+// ----------------------------------------------------- //
+
+nodeWrapper parseBlockStatement (parser* pars) {
+  blockStatement* block = make(blockStatement);
+  advanceParser(pars);
+
+  while (!tokenIs(pars->currToken, TknRBrace)) {
+    nodeWrapper node = parseStatement(pars);
+    advanceParser(pars);
+
+    nl_push(block->statements, node);
+  }
+
+  advanceParser(pars);
+
+  return (nodeWrapper) {
+    .type = BlockStatement,
+    .node = block
+  };
+}
+
+// -> Prefix Expression                                  //
+// ----------------------------------------------------- //
+
 nodeWrapper parsePrefix (parser* pars) {
   prefixExpr* node = make(prefixExpr);
 
@@ -234,6 +303,9 @@ nodeWrapper parsePrefix (parser* pars) {
     .node = node
   };
 }
+
+// -> Infix                                              //
+// ----------------------------------------------------- //
 
 nodeWrapper parseInfix (parser* pars, nodeWrapper left) {
   infixExpr* node = make(infixExpr);
@@ -252,11 +324,63 @@ nodeWrapper parseInfix (parser* pars, nodeWrapper left) {
   };
 }
 
-nodeWrapper parseIfExpr (parser* pars) { }
+// -> Grouped Epxressions (Left Parent)                  //
+// ----------------------------------------------------- //
+
+nodeWrapper parseGroupedExpression (parser* pars) {
+  advanceParser(pars);
+
+  nodeWrapper expr = parseExpression(pars, PrecLowest);
+
+  if (peekExpect(pars, TknRParen))
+    return INVALID_STATEMENT;
+
+  return expr;
+}
+
+// -> If Expressions                                     //
+// ----------------------------------------------------- //
+
+nodeWrapper parseIfExpr (parser* pars) {
+  ifExpr* expr = make(ifExpr);
+
+  expr->token = pars->currToken;
+
+  if (!peekExpect(pars, TknLParen))
+    return INVALID_STATEMENT;
+
+  advanceParser(pars);
+
+  expr->condition = parseExpression(pars, PrecLowest);
+
+  if (!peekExpect(pars, TknRParen))
+    return INVALID_STATEMENT;
+
+  if (!peekTknIs(pars, TknLBrace))
+    return INVALID_STATEMENT;
+
+  expr->body = parseBlockStatement(pars);
+
+  if (currTknIs(pars, TknElse)) {
+    advanceParser(pars);
+    expr->elseBlock = parseBlockStatement(pars);
+  }
+
+  return (nodeWrapper) {
+    .type = IfExpression,
+    .node = expr
+  };
+}
+
+// -> Identifiers                                        //
+// ----------------------------------------------------- //
 
 nodeWrapper parseIdentifier (parser* pars) {
   return WrapNode(mkIdNode(pars->currToken));
 }
+
+// -> Integer Literals                                   //
+// ----------------------------------------------------- //
 
 nodeWrapper parseIntegerLiteral (parser* pars) {
   integerLiteral* lit = make(integerLiteral);
@@ -270,24 +394,44 @@ nodeWrapper parseIntegerLiteral (parser* pars) {
   };
 }
 
-nodeWrapper parseBlockStatement (parser* pars) { }
+// -> Function Literal                                   //
+// ----------------------------------------------------- //
 
-nodeWrapper parseFunctionLiteral (parser* pars) { }
+nodeWrapper parseFunctionLiteral (parser* pars) {
+  fnExpr* expr = make(fnExpr);
 
-nodeWrapper parseBooleanLiteral (parser* pars) { }
+  expr->token = pars->currToken;
 
-nodeWrapper parseExprStatement (parser* pars) {
-  exprStatement* node = make(exprStatement);
+  if (!peekExpect(pars, TknLParen))
+    return INVALID_STATEMENT;
 
-  node->token = pars->currToken;
-  node->expression = parseExpression(pars, PrecLowest);
+  expr->params = parseExpression(pars, PrecLowest);
 
-  if (peekTknIs(pars, TknSemicolon))
-    advanceParser(pars);
+  if (!peekExpect(pars, TknRParen))
+    return INVALID_STATEMENT;
+
+  if (!peekTknIs(pars, TknLBrace))
+    return INVALID_STATEMENT;
+
+  expr->body = parseExpression(pars, PrecLowest);
 
   return (nodeWrapper) {
-    .type = ExpressionNode,
-    .node = node
+    .type = FunctionExpression,
+    .node = expr
   };
 }
 
+// -> Boolean Literal                                    //
+// ----------------------------------------------------- //
+
+nodeWrapper parseBooleanLiteral (parser* pars) {
+  boolExpr* lit = make(boolExpr);
+
+  lit->token = pars->currToken;
+  lit->value = currTknIs(pars, TknTrue);
+
+  return (nodeWrapper) {
+    .type = BooleanLiteral,
+    .node = lit
+  };
+}

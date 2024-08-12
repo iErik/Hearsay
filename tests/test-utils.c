@@ -74,3 +74,32 @@ void expect (
 
   va_end(args);
 }
+
+bool int_eq (int left, int right) {
+  return left == right;
+}
+
+bool char_eq (char left, char right) {
+  return left == right;
+}
+
+bool float_eq (float left, float right) {
+  return left == right;
+}
+
+bool double_eq (double left, double right) {
+  return left == right;
+}
+
+bool str_eq (char* left, char* right) {
+  return streq(left, right);
+}
+
+bool sizet_eq (size_t left, size_t right) {
+  return left == right;
+}
+
+bool ptr_eq (void* left, void* right) {
+  return left == right;
+}
+

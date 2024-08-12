@@ -5,10 +5,11 @@ nodeList* nl_new () {
   nodeList* root = make(nodeList);
   postMalloc(root);
 
-  root->nodes = make(nodeWrapper);
+  root->nodes = cmaken(NODE_LIST_INIT_CAP, nodeWrapper);
+
   postMalloc(root->nodes);
 
-  root->capacity = 10 * sizeof(nodeWrapper);
+  root->capacity = NODE_LIST_INIT_CAP;
   root->length = 0;
   root->iteratorPos = 0;
   root->offsetPtr = root->nodes;
@@ -20,11 +21,9 @@ void nl_destroy (nodeList** nList) { }
 
 void* nl_grow (nodeList* nList) {
   if (nList->capacity == 0) {
-    nList->nodes = (nodeWrapper*) calloc(10,
-      sizeof(nodeWrapper));
+    nList->nodes = cmaken(NODE_LIST_INIT_CAP, nodeWrapper);
     postMalloc(nList->nodes);
-    nList->capacity = 10 * sizeof(nodeWrapper);
-
+    nList->capacity = NODE_LIST_INIT_CAP;
   } else {
     nList->nodes = realloc(
       nList->nodes,

@@ -17,7 +17,7 @@ int isDigitSeparator (lexer* lex) {
 // ------------
 
 lexer* mkLexer (cstring input) {
-  lexer* lex = (lexer*) calloc(1, sizeof(lexer));
+  lexer* lex = (lexer*) malloc(sizeof(lexer));
 
   lex->input = input;
   lex->inputLen = strlen(input);
@@ -117,7 +117,9 @@ token nextToken (lexer* lex) {
         return tkn;
       }
 
-      else { tkn = newToken(TknIllegal, &lex->ch); }
+      else {
+        tkn = newToken(TknIllegal, &lex->ch);
+      }
   }
 
   readChar(lex);
@@ -131,7 +133,7 @@ void readChar (lexer* lexer) {
     lexer->ch = lexer->input[lexer->readPosition];
 
   lexer->lastPosition = lexer->position;
-  lexer->position = lexer->readPosition;
+  lexer->position     = lexer->readPosition;
   lexer->readPosition += 1;
 }
 

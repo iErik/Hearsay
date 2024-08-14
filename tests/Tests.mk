@@ -45,6 +45,10 @@ test-parser: $(T-OUT.D)/parser
 test-nodes: $(T-OUT.D)/nodes
 	@./$<
 
+.PHONY: test-nodeList
+test-nodeList: $(T-OUT.D)/nodeList
+	@./$<
+
 
 .PHONY: test-lexer
 test-lexer: $(T-OUT.D)/lexer
@@ -82,6 +86,13 @@ NODES_DEPS := \
 	$(OBJ.D)/nodes.o \
 	$(TESTS.D)/parser/nodes.c
 $(T-OUT.D)/nodes: $(COMMON_DEPS) $(NODES_DEPS)
+	@$(TCMD) -o $@ $^
+	@chmod +x $@
+
+NODELIST_DEPS := \
+	$(OBJ.D)/nodeList.o \
+	$(TESTS.D)/parser/nodeList.c
+$(T-OUT.D)/nodeList: $(COMMON_DEPS) $(NODELIST_DEPS)
 	@$(TCMD) -o $@ $^
 	@chmod +x $@
 

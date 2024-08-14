@@ -16,35 +16,30 @@ void testGrowList () {
   expect(list->nodes != NULL,
     "rootNode->nodes must not be a NULL pointer\n"
     "Received: %p\n", list->nodes);
-  expect(list->capacity == INITIAL_ROOT_CAPACITY,
-    "rootNode.capacity must be 10 * sizeof(nodeWrapper)\n"
-    "Expected: %lu\n"
-    "Received: %lu\n",
-    INITIAL_ROOT_CAPACITY, list->capacity);
+  expectEq(list->capacity, NODE_LIST_INIT_CAP,
+    interpol(
+      "List's initial capacity must be %d",
+      NODE_LIST_INIT_CAP));
 
   nl_grow(list);
 
   expect(list->nodes != NULL,
     "rootNode->nodes must not be a NULL pointer\n"
     "Received: %p\n", list->nodes);
-  expect(list->capacity == INITIAL_ROOT_CAPACITY * 2,
-    "rootNode.capacity must be "
-    "(10 * sizeof(nodeWrapper)) * 2\n"
-    "Expected: %lu\n"
-    "Received: %lu\n",
-    INITIAL_ROOT_CAPACITY * 2, list->capacity);
+  expectEq(list->capacity, NODE_LIST_INIT_CAP * 2,
+    interpol(
+      "List's capacity must have doubled (%d)",
+      NODE_LIST_INIT_CAP * 2));
 
   nl_grow(list);
 
   expect(list->nodes != NULL,
     "rootNode->nodes must not be a NULL pointer\n"
     "Received: %p\n", list->nodes);
-  expect(list->capacity == (INITIAL_ROOT_CAPACITY * 2) * 2,
-    "rootNode.capacity must be "
-    "((10 * sizeof(nodeWrapper)) * 2) * 2\n"
-    "Expected: %lu\n"
-    "Received: %lu\n",
-    (INITIAL_ROOT_CAPACITY * 2) * 2, list->capacity);
+  expectEq(list->capacity, (NODE_LIST_INIT_CAP * 2) * 2,
+    interpol(
+      "List's capacity must have doubled once more (%d)",
+      (NODE_LIST_INIT_CAP * 2) * 2));
 
   if (list != NULL) free(list);
 }
@@ -201,4 +196,8 @@ void TestNodeList () {
   if (list != NULL) free(list);
 }
 
+int main () {
+  TestNodeList();
 
+  return 0;
+}

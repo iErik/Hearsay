@@ -96,7 +96,26 @@ void TestInfixExpr () {
             .type = TknInt
           }
         })
+      },
+      .right = (nodeWrapper) {
+        .type = IntegerLiteral,
+        .node = &((integerLiteral) {
+          .value = 1,
+          .token = (token) {
+            .literal = "1",
+            .type = TknInt
+          }
+        })
       }
+    },
+
+    {
+      .token = (token) {
+        .literal = "(",
+        .type = TknIdent
+      },
+      .left = (nodeWrapper) { },
+      .right = (nodeWrapper) { },
     }
   };
 

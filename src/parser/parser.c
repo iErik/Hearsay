@@ -1,5 +1,6 @@
 #include "utils/array.h"
 #include "utils/text.h"
+#include "utils/mem.h"
 
 #include "lexer/tokens.h"
 #include "parser/nodes.h"
@@ -54,6 +55,18 @@ void advanceParser (parser* pars) {
   pars->lastToken = pars->currToken;
   pars->currToken = pars->peekToken;
   pars->peekToken = nextToken(pars->lexer);
+}
+
+nodeList* parse (cstring input) {
+  lexer* lex = mkLexer(input);
+  parser* pars = mkParser(lex);
+
+  rootNode* rNode = parseProgram(pars);
+  nodeList* nodes = rNode->nodes;
+
+  sFree(&rNode);
+
+  return nodes;
 }
 
 bool currTknIs (parser* pars, tokenType type) {
@@ -158,7 +171,6 @@ nodeWrapper parseStatement (parser* pars) {
   return INVALID_STATEMENT;
 }
 
-
 nodeWrapper parseLetStatement (parser* pars) {
   letStatement* letStm = make(letStatement);
 
@@ -188,7 +200,6 @@ nodeWrapper parseLetStatement (parser* pars) {
   };
 }
 
-
 nodeWrapper parseRetStatement (parser* pars) {
   retStatement* retState = make(retStatement);
   retState->token = pars->currToken;
@@ -205,7 +216,6 @@ nodeWrapper parseRetStatement (parser* pars) {
     .node = retState
   };
 }
-
 
 void noPrefixParseFnError (parser* pars, tokenType tkn) {
   pushParserError(pars, interpol(
@@ -250,20 +260,10 @@ nodeWrapper parseExpression (
 }
 
 nodeWrapper parseExprStatement (parser* pars) {
-  exprStatement* node = make(exprStatement);
-
-  node->token = pars->currToken;
-  node->expression = parseExpression(pars, PrecLowest);
-
-  if (peekTknIs(pars, TknSemicolon))
-    advanceParser(pars);
-
-  return (nodeWrapper) {
-    .type = ExpressionNode,
-    .node = node
-  };
+  return parseExpression(pars, PrecLowest);
 }
 
+// ----------------------------------------------------- //
 // -> Block Statements                                   //
 // ----------------------------------------------------- //
 
@@ -286,6 +286,7 @@ nodeWrapper parseBlockStatement (parser* pars) {
   };
 }
 
+// ----------------------------------------------------- //
 // -> Prefix Expression                                  //
 // ----------------------------------------------------- //
 
@@ -304,6 +305,7 @@ nodeWrapper parsePrefix (parser* pars) {
   };
 }
 
+// ----------------------------------------------------- //
 // -> Infix                                              //
 // ----------------------------------------------------- //
 
@@ -324,6 +326,7 @@ nodeWrapper parseInfix (parser* pars, nodeWrapper left) {
   };
 }
 
+// ----------------------------------------------------- //
 // -> Grouped Epxressions (Left Parent)                  //
 // ----------------------------------------------------- //
 
@@ -338,6 +341,7 @@ nodeWrapper parseGroupedExpression (parser* pars) {
   return expr;
 }
 
+// ----------------------------------------------------- //
 // -> If Expressions                                     //
 // ----------------------------------------------------- //
 
@@ -372,6 +376,7 @@ nodeWrapper parseIfExpr (parser* pars) {
   };
 }
 
+// ----------------------------------------------------- //
 // -> Identifiers                                        //
 // ----------------------------------------------------- //
 
@@ -379,6 +384,7 @@ nodeWrapper parseIdentifier (parser* pars) {
   return WrapNode(mkIdNode(pars->currToken));
 }
 
+// ----------------------------------------------------- //
 // -> Integer Literals                                   //
 // ----------------------------------------------------- //
 
@@ -394,6 +400,7 @@ nodeWrapper parseIntegerLiteral (parser* pars) {
   };
 }
 
+// ----------------------------------------------------- //
 // -> Function Literal                                   //
 // ----------------------------------------------------- //
 
@@ -421,6 +428,7 @@ nodeWrapper parseFunctionLiteral (parser* pars) {
   };
 }
 
+// ----------------------------------------------------- //
 // -> Boolean Literal                                    //
 // ----------------------------------------------------- //
 

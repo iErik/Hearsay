@@ -13,11 +13,27 @@
     retStatement*: returnAsString,                        \
     rootNode*: rootAsString,                              \
     invalidNode*: invalidAsString,                        \
-    nodeWrapper: wrapperAsString                         \
+    nodeWrapper*: wrapperAsString                         \
   )(node)
 
 #define TokenLiteral(node) _Generic((node),               \
     rootNode: rootTokenLiteral                            \
+  )(&node)
+
+#define FreeNode(node) _Generic((node),                   \
+    nodeWrapper: unmkNodeWrapper,                         \
+    rootNode*: unmkRootNode,                              \
+    invalidNode*: unmkInvalidNode,                        \
+    identifierNode*: unmkIdNode,                          \
+    blockStatement*: unmkBlockNode,                       \
+    letStatement*: unmkLetNode,                           \
+    retStatement*: unmkReturnNode,                        \
+    prefixExpr*: unmkPrefixNode,                          \
+    infixExpr*: unmkInfixNode,                            \
+    ifExpr*: unmkIfNode,                                  \
+    boolExpr*: unmkBoolNode,                              \
+    fnExpr*: unmkFnNode,                                  \
+    integerLiteral*: unmkIntNode                          \
   )(&node)
 
 #define WrapNode(node) _Generic((node),                   \
@@ -42,7 +58,6 @@ typedef enum {
   RootNode,
 
   IdentifierNode,
-  ExpressionNode,
   ExpressionGroupNode,
 
   BooleanLiteral,
@@ -93,8 +108,8 @@ void  nl_resetIterator (nodeList* nList);
 // ----------------------------------------------------- //
 
 typedef struct nodeWrapper {
-  nodeType type;
   void*    node;
+  nodeType type;
 } nodeWrapper;
 
 typedef struct rootNode {
@@ -120,9 +135,9 @@ typedef struct exprStatement {
 } exprStatement;
 
 typedef struct letStatement {
-  token           token;
-  identifierNode  name;
-  nodeWrapper     value;
+  token            token;
+  identifierNode*  name;
+  nodeWrapper      value;
 } letStatement;
 
 typedef struct retStatement {
@@ -180,8 +195,8 @@ nodeWrapper* iterator (rootNode* rNode);
 void resetIterator (rootNode* rNode);
 
 
-letStatement* mkLetStatement (token letTkn, token idTkn);
-retStatement* mkRetStatement (token retTkn);
+letStatement* mkLetStatement (token id, nodeWrapper val);
+retStatement* mkRetStatement (nodeWrapper val);
 identifierNode* mkIdNode (token tkn);
 invalidNode* mkInvalidNode (token tkn);
 
@@ -191,7 +206,7 @@ cstring letAsString (letStatement* node);
 cstring returnAsString (retStatement* node);
 cstring identifierAsString (identifierNode* node);
 cstring invalidAsString (invalidNode* node);
-cstring wrapperAsString (nodeWrapper node);
+cstring wrapperAsString (nodeWrapper* node);
 
 
 cstring rootTokenLiteral (rootNode* rNode);
@@ -205,3 +220,17 @@ nodeWrapper wrapLetNode (letStatement* node);
 nodeWrapper wrapReturnNode (retStatement* node);
 nodeWrapper wrapInvalidNode (invalidNode* node);
 
+
+void unmkRootNode (rootNode** node);
+void unmkLetNode (letStatement** node);
+void unmkIdNode (identifierNode** node);
+void unmkReturnNode (retStatement** node);
+void unmkBlockNode (blockStatement** node);
+void unmkPrefixNode (prefixExpr** node);
+void unmkInfixNode (infixExpr** node);
+void unmkIfNode (ifExpr** node);
+void unmkBoolNode (boolExpr** node);
+void unmkFnNode (fnExpr** node);
+void unmkIntNode (integerLiteral** node);
+void unmkInvalidNode (invalidNode** node);
+void unmkNodeWrapper (nodeWrapper* node);

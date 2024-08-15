@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "lexer/tokens.h"
+#include "utils/text.h"
 
 
 // -> Constants
@@ -52,6 +53,11 @@ bool isWhitespace (char ch) {
 
 bool tokenIs (token tkn, tokenType type) {
   return tkn.type == type;
+}
+
+bool tokenEq (token* left, token* right) {
+  return left->type == right->type
+      && streq(left->literal, right->literal);
 }
 
 opPrecedence tknPrecedence (token tkn) {

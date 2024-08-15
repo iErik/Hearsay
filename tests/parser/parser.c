@@ -81,6 +81,38 @@ void TestInfixExpr () {
     "(5 + 5) * 2;"
     "3 + 4 * 7;";
 
+  nodeList* nodeExp = nl_new();
+
+  nl_push(nodeExp,
+    WrapNode(mkInfixNode(
+      newToken(TknPlus, "+"),
+      WrapNode(mkIntNode(1)),
+      WrapNode(mkIntNode(3))
+    )));
+
+  nl_push(nodeExp,
+    WrapNode(mkInfixNode(
+      newToken(TknAsterisk, "*"),
+      WrapNode(mkInfixNode(
+        newToken(TknPlus, "+"),
+        WrapNode(mkIntNode(5)),
+        WrapNode(mkIntNode(5)))),
+      WrapNode(mkIntNode(2))
+    )));
+
+  nl_push(nodeExp,
+    WrapNode(mkInfixNode(
+      newToken(TknInt, "+"),
+      WrapNode(mkIntNode(3)),
+      WrapNode(mkInfixNode(
+        newToken(TknAsterisk, "*"),
+        WrapNode(mkIntNode(4)),
+        WrapNode(mkIntNode(7))))
+    )));
+
+  nodeList* parsedInput = parse(input);
+
+  /*
   infixExpr exprExpect[] = {
     {
       .token = (token) {
@@ -118,13 +150,23 @@ void TestInfixExpr () {
       .right = (nodeWrapper) { },
     }
   };
+  */
 
-  lexer* lex = mkLexer(input);
-  parser* pars = mkParser(lex);
-  rootNode* prog = parseProgram(pars);
+  expect(parsedInput != NULL,
+      "Parsed input must not be NULL\n");
+  expectEq(parsedInput->length, nodeExp->length,
+    "Parsed input length");
 
-  checkParserErrors(pars);
-  expect(prog != NULL, "Program Node must not be NULL\n");
+  if (parsedInput->length != nodeExp->length)
+    return;
+
+  for (int i = 0; i < nodeExp->length; i++)
+    expectEq(
+      (int) CompareNodes(
+        nl_get(parsedInput, i),
+        nl_get(nodeExp, i)),
+      true,
+      "Node strucutre should match");
 }
 
 // ----------------------------------------------------- //
@@ -168,7 +210,7 @@ bool testLetStatement (
   double expectedVal
 ) {
   letStatement* letNode = (letStatement *) wrapper->node;
-  identifierNode* idNode = &letNode->name;
+  identifierNode* idNode = letNode->name;
   token letTkn = letNode->token;
   token idTkn  = idNode->token;
 
@@ -184,10 +226,10 @@ bool testLetStatement (
   expectEq((int) letTkn.type, (int) TknLet,
     "Statement's token.type must be TknLet");
   expectEq(letTkn.literal, "let",
-    "Statement's token.literal must be 'let'")
+    "Statement's token.literal must be 'let'");
 
   expectEq(idNode->value, expectedId,
-    "Identifier's value and expectedId parameter")
+    "Identifier's value and expectedId parameter");
 
   expectEq(idTkn.literal, expectedId,
     "Identifier's token literal");
@@ -213,7 +255,7 @@ void TestLetStatements () {
   expect(prog != NULL, "Program Node must not be NULL\n");
 
   expectEq(prog->nodes->length, 3,
-        "Number of statements parsed");
+    "Number of statements parsed");
 
   cstring expectIds[] = { "x", "y", "foo" };
   double expectedValues[] = { 5, 10, 9999 };
@@ -224,7 +266,8 @@ void TestLetStatements () {
 
 int main () {
   TestLetStatements();
-  TestLiterals();
+  TestInfixExpr();
+  //TestLiterals();
 
   return 0;
 }

@@ -8,17 +8,20 @@
 // ----------------------------------------------------- //
 
 #define AsString(node) _Generic((node),                   \
-    identifierNode*: identifierAsString,                  \
-    letStatement*: letAsString,                           \
-    retStatement*: returnAsString,                        \
+    nodeWrapper*: wrapperAsString,                        \
     rootNode*: rootAsString,                              \
     invalidNode*: invalidAsString,                        \
-    nodeWrapper*: wrapperAsString                         \
+    identifierNode*: identifierAsString,                  \
+    blockStatement*: blockAsStr,                          \
+    letStatement*: letAsString,                           \
+    retStatement*: returnAsString,                        \
+    prefixExpr*: prefixAsStr,                             \
+    infixExpr*: infixAsStr,                               \
+    ifExpr*: ifAsStr,                                     \
+    boolExpr*: boolAsStr,                                 \
+    fnExpr*: fnAsStr,                                     \
+    integerLiteral*: intAsStr                             \
   )(node)
-
-#define TokenLiteral(node) _Generic((node),               \
-    rootNode: rootTokenLiteral                            \
-  )(&node)
 
 #define FreeNode(node) _Generic((node),                   \
     nodeWrapper: unmkNodeWrapper,                         \
@@ -38,12 +41,51 @@
 
 #define WrapNode(node) _Generic((node),                   \
     rootNode*: wrapRootNode,                              \
+    invalidNode*: wrapInvalidNode,                        \
     identifierNode*: wrapIdentifierNode,                  \
+    blockStatement*: wrapBlock,                           \
     letStatement*: wrapLetNode,                           \
     retStatement*: wrapReturnNode,                        \
-    exprStatement*: wrapExprNode,                         \
-    invalidNode*: wrapInvalidNode                         \
+    prefixExpr*: wrapPrefixNode,                          \
+    infixExpr*: wrapInfixNode,                            \
+    ifExpr*: wrapIfNode,                                  \
+    boolExpr*: wrapBoolNode,                              \
+    fnExpr*: wrapFnNode,                                  \
+    integerLiteral*: wrapIntNode                          \
   )(node)
+
+#define CompareNodes(left, right) _Generic((left),        \
+    nodeWrapper*: compareNodeWrapper,                     \
+    rootNode*: compareRoot,                               \
+    letStatement*: compareLet,                            \
+    identifierNode*: compareId,                           \
+    fnExpr*: compareFn,                                   \
+    blockStatement*: compareBlock,                        \
+    retStatement*: compareReturn,                         \
+    ifExpr*: compareIf,                                   \
+    prefixExpr*: comparePrefix,                           \
+    infixExpr*: compareInfix,                             \
+    boolExpr*: compareBool,                               \
+    integerLiteral*: compareInt,                          \
+    invalidNode*: compareInvalid                          \
+  )(left, right)
+
+#define DescribeNode(node) _Generic((node),               \
+    nodeWrapper*: describeNode,                           \
+    rootNode*: describeRoot,                              \
+    letStatement*: describeLet,                           \
+    identifierNode*: describeId,                          \
+    fnExpr*: describeFn,                                  \
+    blockStatement*: describeBlock,                       \
+    retStatement*: describeReturn,                        \
+    ifExpr*: describeIf,                                  \
+    prefixExpr*: describePrefix,                          \
+    infixExpr*: describeInfix,                            \
+    boolExpr*: describeBool,                              \
+    integerLiteral*: describeInt,                         \
+    invalidNode*: describeInvalid                         \
+  )(node)
+
 
 #define INVALID_STATEMENT (nodeWrapper) {                 \
   .type = InvalidStatement,                               \
@@ -58,7 +100,6 @@ typedef enum {
   RootNode,
 
   IdentifierNode,
-  ExpressionGroupNode,
 
   BooleanLiteral,
   IntegerLiteral,
@@ -186,7 +227,7 @@ typedef struct integerLiteral {
 // -> Functions                                          //
 // ----------------------------------------------------- //
 
-rootNode* mkRootNode ();
+// rootNode
 void* growRootNode (rootNode* rNode);
 void pushNode (rootNode* rNode, nodeWrapper node);
 nodeWrapper* getNode (rootNode* rNode, uint offset);
@@ -195,42 +236,133 @@ nodeWrapper* iterator (rootNode* rNode);
 void resetIterator (rootNode* rNode);
 
 
-letStatement* mkLetStatement (token id, nodeWrapper val);
-retStatement* mkRetStatement (nodeWrapper val);
-identifierNode* mkIdNode (token tkn);
-invalidNode* mkInvalidNode (token tkn);
-
-
+rootNode* mkRootNode ();
 cstring rootAsString (rootNode* rNode);
-cstring letAsString (letStatement* node);
-cstring returnAsString (retStatement* node);
-cstring identifierAsString (identifierNode* node);
-cstring invalidAsString (invalidNode* node);
-cstring wrapperAsString (nodeWrapper* node);
-
-
-cstring rootTokenLiteral (rootNode* rNode);
-cstring getTokenLiteral (nodeWrapper* wrapper);
-
-
 nodeWrapper wrapRootNode (rootNode* node);
-nodeWrapper wrapIdentifierNode (identifierNode* node);
-nodeWrapper wrapExprNode (void* node);
-nodeWrapper wrapLetNode (letStatement* node);
-nodeWrapper wrapReturnNode (retStatement* node);
-nodeWrapper wrapInvalidNode (invalidNode* node);
-
-
 void unmkRootNode (rootNode** node);
+bool compareRoot (rootNode* left, rootNode* right);
+cstring describeRoot (rootNode* node);
+
+
+// letStatement
+letStatement* mkLetStatement (token id, nodeWrapper val);
+cstring letAsString (letStatement* node);
+nodeWrapper wrapLetNode (letStatement* node);
 void unmkLetNode (letStatement** node);
+bool compareLet (letStatement* left, letStatement* right);
+cstring describeLet (letStatement* node);
+
+// identifierNode
+identifierNode* mkIdNode (token tkn);
+cstring identifierAsString (identifierNode* node);
+nodeWrapper wrapIdentifierNode (identifierNode* node);
 void unmkIdNode (identifierNode** node);
-void unmkReturnNode (retStatement** node);
-void unmkBlockNode (blockStatement** node);
-void unmkPrefixNode (prefixExpr** node);
-void unmkInfixNode (infixExpr** node);
-void unmkIfNode (ifExpr** node);
-void unmkBoolNode (boolExpr** node);
+bool compareId (
+  identifierNode* left,
+  identifierNode* right);
+cstring describeId (identifierNode* node);
+
+
+// fnExpr
+fnExpr* mkFnNode (nodeWrapper params, nodeWrapper body);
+cstring fnAsStr (fnExpr* fun);
+nodeWrapper wrapFnNode (fnExpr* node);
 void unmkFnNode (fnExpr** node);
+bool compareFn (fnExpr* left, fnExpr* right);
+cstring describeFn (fnExpr* node);
+
+
+// blockStatement
+blockStatement* mkBlockStatement (nodeList* statements);
+cstring blockAsStr (blockStatement* block);
+nodeWrapper wrapBlock (blockStatement* block);
+void unmkBlockNode (blockStatement** node);
+bool compareBlock (
+  blockStatement* left,
+  blockStatement* right);
+cstring describeBlock (blockStatement* node);
+
+
+// retStatement
+retStatement* mkRetStatement (nodeWrapper val);
+cstring returnAsString (retStatement* node);
+nodeWrapper wrapReturnNode (retStatement* node);
+void unmkReturnNode (retStatement** node);
+bool compareReturn (
+  retStatement* left,
+  retStatement* right);
+cstring describeReturn (retStatement* node);
+
+
+// ifExpr
+ifExpr* mkIfNode (
+  token tkn,
+  nodeWrapper cond,
+  nodeWrapper body,
+  nodeWrapper elseB);
+cstring ifAsStr (ifExpr* node);
+nodeWrapper wrapIfNode (ifExpr* node);
+void unmkIfNode (ifExpr** node);
+bool compareIf (ifExpr* left, ifExpr* right);
+cstring describeIf (ifExpr* node);
+
+
+// prefixExpr
+prefixExpr* mkPrefixNode (
+  token operator,
+  nodeWrapper right);
+cstring prefixAsStr (prefixExpr* node);
+nodeWrapper wrapPrefixNode (prefixExpr* node);
+void unmkPrefixNode (prefixExpr** node);
+bool comparePrefix (prefixExpr* left, prefixExpr* right);
+cstring describePrefix (prefixExpr* node);
+
+
+// infixExpr
+infixExpr* mkInfixNode (
+  token operator,
+  nodeWrapper left,
+  nodeWrapper right);
+cstring infixAsStr (infixExpr* node);
+nodeWrapper wrapInfixNode (infixExpr* node);
+void unmkInfixNode (infixExpr** node);
+bool compareInfix (infixExpr* left, infixExpr* right);
+cstring describeInfix (infixExpr* node);
+
+
+// boolExpr
+boolExpr* mkBoolNode (token tkn);
+cstring boolAsStr (boolExpr* expr);
+nodeWrapper wrapBoolNode (boolExpr* expr);
+void unmkBoolNode (boolExpr** node);
+bool compareBool (boolExpr* left, boolExpr* right);
+cstring describeBool (boolExpr* node);
+
+
+// integerLiteral
+integerLiteral* mkIntNode (double number);
+cstring intAsStr (integerLiteral* node);
+nodeWrapper wrapIntNode (integerLiteral* node);
 void unmkIntNode (integerLiteral** node);
+bool compareInt (
+  integerLiteral* left,
+  integerLiteral* right);
+cstring describeInt (integerLiteral* node);
+
+
+// invalidNode
+invalidNode* mkInvalidNode (token tkn);
+cstring invalidAsString (invalidNode* node);
+nodeWrapper wrapInvalidNode (invalidNode* node);
 void unmkInvalidNode (invalidNode** node);
+bool compareInvalid ();
+cstring describeInvalid ();
+
+
+// nodeWrapper
+cstring wrapperAsString (nodeWrapper* node);
 void unmkNodeWrapper (nodeWrapper* node);
+bool compareNodeWrapper (
+  nodeWrapper* left,
+  nodeWrapper* right);
+cstring describeNode (nodeWrapper* wrapper);

@@ -27,7 +27,7 @@ void* nl_grow (nodeList* nList) {
   } else {
     nList->nodes = realloc(
       nList->nodes,
-      nList->capacity * 2);
+      (nList->capacity * 2) * sizeof(nodeWrapper));
     postMalloc(nList->nodes);
     nList->capacity *= 2;
   }

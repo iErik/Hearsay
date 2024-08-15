@@ -94,5 +94,6 @@ bool isWhitespace (char ch);
 bool isLetter (char ch);
 bool isDigit (char ch);
 bool tokenIs (token tkn, tokenType type);
+bool tokenEq (token* left, token* right);
 
 opPrecedence tknPrecedence (token tkn);

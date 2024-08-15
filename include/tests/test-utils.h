@@ -55,7 +55,7 @@ bool double_eq (double left, double right);
   default: ptr_eq                                         \
   )(left, right)
 
-#define expectEq(left, right, stat)                       \
+#define expectEq(left, right, stat) do {                  \
   if (EQ(left, right))                                    \
     expect(EQ(left, right), "Expect Equal: %s\n", stat);  \
   else                                                    \
@@ -65,7 +65,8 @@ bool double_eq (double left, double right);
       interpol(                                           \
         " - Received: %s\n",                              \
         PRINT_FORMAT( (right) ))                          \
-    ), right, left);
+    ), right, left);                                      \
+} while (0)
 
 void vfail (const cstring message, va_list args);
 

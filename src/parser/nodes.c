@@ -35,6 +35,17 @@ nodeWrapper* getNode (rootNode* rNode, uint offset) {
   return nl_get(rNode->nodes, offset);
 }
 
+bool compareNodeList (nodeList* left, nodeList* right) {
+  if (left->length != right->length) return false;
+
+  for (int i = 0; i < left->length; i++) {
+    if (!CompareNodes(nl_get(left, i), nl_get(right, i)))
+      return false;
+  }
+
+  return true;
+}
+
 // -> rootNode
 // ===========
 
@@ -58,13 +69,6 @@ cstring rootAsString (rootNode* rNode) {
   return str;
 }
 
-cstring rootTokenLiteral (rootNode* rNode) {
-  if (rNode->nodes->length == 0) return "";
-
-  nodeWrapper* firstNode = getNode(rNode, 0);
-  return getTokenLiteral(firstNode);
-}
-
 nodeWrapper wrapRootNode (rootNode* node) {
   return (nodeWrapper) {
     .type = RootNode,
@@ -78,6 +82,12 @@ void unmkRootNode (rootNode** rNode) {
   nl_destroy(&(*rNode)->nodes);
   sFree(rNode);
 }
+
+bool compareRoot (rootNode* left, rootNode* right) {
+  return compareNodeList(left->nodes, right->nodes);
+}
+
+cstring describeRoot (rootNode* node) { }
 
 // -> letStatement
 // ===============
@@ -120,6 +130,13 @@ void unmkLetNode (letStatement** node) {
   sFree(node);
 }
 
+bool compareLet (letStatement* left, letStatement* right) {
+  return compareId(left->name, right->name)
+      && CompareNodes(&left->value, &right->value);
+}
+
+cstring describeLet (letStatement* left) { }
+
 // -> identifierNode
 // =================
 
@@ -152,6 +169,16 @@ void unmkIdNode (identifierNode** node) {
   sFree(node);
 }
 
+bool compareId (
+  identifierNode* left,
+  identifierNode* right
+) {
+  return tokenEq(&left->token, &right->token)
+      && streq(left->value, right->value);
+}
+
+cstring describeId (identifierNode* node) { }
+
 // -> fnExpr
 // =========
 
@@ -181,6 +208,14 @@ void unmkFnNode (fnExpr** node) {
   FreeNode((*node)->body);
   sFree(node);
 }
+
+bool compareFn (fnExpr* left, fnExpr* right) {
+  return tokenEq(&left->token, &right->token)
+      && CompareNodes(&left->params, &right->params)
+      && CompareNodes(&left->body, &right->body);
+}
+
+cstring describeFn (fnExpr* node) { }
 
 // -> blockStatement
 // =================
@@ -216,6 +251,17 @@ void unmkBlockNode (blockStatement** node) {
   nl_destroy(&(*node)->statements);
   sFree(node);
 }
+
+bool compareBlock (
+  blockStatement* left,
+  blockStatement* right
+) {
+  return compareNodeList(
+    left->statements,
+    right->statements);
+}
+
+cstring describeBlock (blockStatement* node) {}
 
 // -> retStatement
 // ===============
@@ -255,6 +301,16 @@ void unmkReturnNode (retStatement** node) {
   FreeNode((*node)->value);
   sFree(node);
 }
+
+bool compareReturn (
+  retStatement* left,
+  retStatement* right
+) {
+  return tokenEq(&left->token, &right->token)
+      && CompareNodes(&left->value, &right->value);
+}
+
+cstring describeReturn (retStatement* node) { }
 
 // -> ifExpr
 // =========
@@ -310,6 +366,15 @@ void unmkIfNode (ifExpr** nodePtr) {
   sFree(nodePtr);
 }
 
+bool compareIf (ifExpr* left, ifExpr* right) {
+  return tokenEq(&left->token, &right->token)
+      && CompareNodes(&left->condition, &right->condition)
+      && CompareNodes(&left->body, &right->body)
+      && CompareNodes(&left->elseBlock, &right->elseBlock);
+}
+
+cstring describeIf (ifExpr* node) { }
+
 // -> prefixExpr
 // =============
 
@@ -344,6 +409,14 @@ void unmkPrefixNode (prefixExpr** node) {
   FreeNode((*node)->right);
   sFree(node);
 }
+
+bool comparePrefix (prefixExpr* left, prefixExpr* right) {
+  return tokenEq(&left->token, &right->token)
+      && streq(left->operator, right->operator)
+      && CompareNodes(&left->right, &right->right);
+}
+
+cstring describePrefix (prefixExpr* node) { }
 
 // -> infixExpr
 // ============
@@ -383,6 +456,15 @@ void unmkInfixNode (infixExpr** node) {
   sFree(node);
 }
 
+bool compareInfix (infixExpr* left, infixExpr* right) {
+  return tokenEq(&left->token, &right->token)
+      && CompareNodes(&left->left, &right->left)
+      && streq(left->operator, right->operator)
+      && CompareNodes(&left->right, &right->right);
+}
+
+cstring describeInfix (infixExpr* node) { }
+
 // -> boolExpr
 // ===========
 
@@ -410,6 +492,13 @@ void unmkBoolNode (boolExpr** node) {
   sFree(node);
 }
 
+bool compareBool (boolExpr* left, boolExpr* right) {
+  return tokenEq(&left->token, &right->token)
+      && left->value == right->value;
+}
+
+cstring describeBool (boolExpr* node) { }
+
 // -> integerLiteral
 // =================
 
@@ -425,14 +514,14 @@ integerLiteral* mkIntNode (double number) {
   return lit;
 }
 
-cstring intAsStr (integerLiteral* num) {
-  return interpol("%d", num->value);
+cstring intAsStr (integerLiteral* node) {
+  return interpol("%d", node->value);
 }
 
-nodeWrapper wrapIntNode (integerLiteral* num) {
+nodeWrapper wrapIntNode (integerLiteral* node) {
   return (nodeWrapper) {
     .type = IntegerLiteral,
-    .node = num
+    .node = node
   };
 }
 
@@ -440,6 +529,16 @@ void unmkIntNode (integerLiteral** node) {
   sFree(&(*node)->token.literal);
   sFree(node);
 }
+
+bool compareInt(
+  integerLiteral* left,
+  integerLiteral* right
+) {
+  return tokenEq(&left->token, &right->token)
+      && left->value == right->value ;
+}
+
+cstring describeInt (integerLiteral* node) { }
 
 // -> invalidNode
 // ==============
@@ -468,6 +567,10 @@ void unmkInvalidNode (invalidNode** node) {
   sFree(node);
 }
 
+bool compareInvalid () { return true; }
+
+cstring describeInvalid () { return ""; }
+
 // -> nodeWrapper
 // ==============
 
@@ -480,9 +583,8 @@ cstring wrapperAsString (nodeWrapper* wrapper) {
     case IdentifierNode:
       return identifierAsString(
         (identifierNode*) wrapper->node);
-    case ExpressionGroupNode:
-      return "";
     case BooleanLiteral:
+    case BooleanExpression:
       return boolAsStr((boolExpr*) wrapper->node);
     case IntegerLiteral:
       return intAsStr((integerLiteral*) wrapper->node);
@@ -494,8 +596,6 @@ cstring wrapperAsString (nodeWrapper* wrapper) {
       return ifAsStr((ifExpr*) wrapper->node);
     case PrefixExpression:
       return prefixAsStr((prefixExpr*) wrapper->node);
-    case BooleanExpression:
-      return boolAsStr((boolExpr*) wrapper->node);
     case LetStatement:
       return letAsString((letStatement*) wrapper->node);
     case ReturnStatement:
@@ -507,56 +607,104 @@ cstring wrapperAsString (nodeWrapper* wrapper) {
   }
 }
 
-/*
-cstring getTokenLiteral (nodeWrapper* wrapper) {
-  void* node = wrapper->node;
-
-  switch (wrapper->type) {
-    case RootNode:
-      return rootTokenLiteral(wrapper->node);
-    case IdentifierNode:
-      return ((identifierNode *) node)->token.literal;
-    case LetStatement:
-      return ((letStatement *) node)->token.literal;
-    case ReturnStatement:
-      return ((retStatement *) node)->token.literal;
-    case InvalidStatement:
-      return "";
-  }
-}
-*/
-
 void unmkNodeWrapper (nodeWrapper* wrapper) {
   void* node = wrapper->node;
 
   switch (wrapper->type) {
     case RootNode:
-      unmkRootNode((rootNode**) &node);
+      return unmkRootNode((rootNode**) &node);
     case IdentifierNode:
-      unmkIdNode((identifierNode**) &node);
-    case ExpressionGroupNode:
-      return;
+      return unmkIdNode((identifierNode**) &node);
     case BooleanLiteral:
-      unmkBoolNode((boolExpr**) &node);
-    case IntegerLiteral:
-      unmkIntNode((integerLiteral**) &node);
-    case InfixExpression:
-      unmkInfixNode((infixExpr**) &node);
-    case FunctionExpression:
-      unmkFnNode((fnExpr**) &node);
-    case IfExpression:
-      unmkIfNode((ifExpr**) &node);
-    case PrefixExpression:
-      unmkPrefixNode((prefixExpr**) &node);
     case BooleanExpression:
-      unmkBoolNode((boolExpr**) &node);
+      return unmkBoolNode((boolExpr**) &node);
+    case IntegerLiteral:
+      return unmkIntNode((integerLiteral**) &node);
+    case InfixExpression:
+      return unmkInfixNode((infixExpr**) &node);
+    case FunctionExpression:
+      return unmkFnNode((fnExpr**) &node);
+    case IfExpression:
+      return unmkIfNode((ifExpr**) &node);
+    case PrefixExpression:
+      return unmkPrefixNode((prefixExpr**) &node);
     case LetStatement:
-      unmkLetNode((letStatement**) &node);
+      return unmkLetNode((letStatement**) &node);
     case ReturnStatement:
-      unmkReturnNode((retStatement**) &node);
+      return unmkReturnNode((retStatement**) &node);
     case BlockStatement:
-      unmkBlockNode((blockStatement**) &node);
+      return unmkBlockNode((blockStatement**) &node);
     case InvalidStatement:
-      unmkInvalidNode((invalidNode**) &node);
+      return unmkInvalidNode((invalidNode**) &node);
   }
+}
+
+bool compareNodeWrapper (
+  nodeWrapper* left,
+  nodeWrapper* right
+) {
+  if (left == NULL || right == NULL) return 0;
+  if (left->type != right->type) return 0;
+
+  switch (left->type) {
+    case RootNode:
+      return compareRoot(left->node, right->node);
+    case LetStatement:
+      return compareLet(left->node, right->node);
+    case IdentifierNode:
+      return compareId(left->node, right->node);
+    case FunctionExpression:
+      return compareFn(left->node, right->node);
+    case BlockStatement:
+      return compareBlock(left->node, right->node);
+    case ReturnStatement:
+      return compareReturn(left->node, right->node);
+    case IfExpression:
+      return compareIf(left->node, right->node);
+    case PrefixExpression:
+      return comparePrefix(left->node, right->node);
+    case InfixExpression:
+      return compareInfix(left->node, right->node);
+    case BooleanLiteral:
+    case BooleanExpression:
+      return compareBool(left->node, right->node);
+    case IntegerLiteral:
+      return compareInt(left->node, right->node);
+    case InvalidStatement:
+      return 1;
+  }
+
+  return 0;
+}
+
+cstring describeNode (nodeWrapper* wrapper) {
+  switch (wrapper->type) {
+    case RootNode:
+      return describeRoot(wrapper->node);
+    case LetStatement:
+      return describeLet(wrapper->node);
+    case IdentifierNode:
+      return describeId(wrapper->node);
+    case FunctionExpression:
+      return describeFn(wrapper->node);
+    case BlockStatement:
+      return describeBlock(wrapper->node);
+    case ReturnStatement:
+      return describeReturn(wrapper->node);
+    case IfExpression:
+      return describeIf(wrapper->node);
+    case PrefixExpression:
+      return describePrefix(wrapper->node);
+    case InfixExpression:
+      return describeInfix(wrapper->node);
+    case BooleanLiteral:
+    case BooleanExpression:
+      return describeBool(wrapper->node);
+    case IntegerLiteral:
+      return describeInt(wrapper->node);
+    case InvalidStatement:
+      return describeInvalid();
+  }
+
+  return "";
 }

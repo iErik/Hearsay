@@ -179,10 +179,7 @@ nodeWrapper parseLetStatement (parser* pars) {
   if (!peekExpect(pars, TknIdent))
     return INVALID_STATEMENT;
 
-  letStm->name = (identifierNode) {
-    .token = pars->currToken,
-    .value = pars->currToken.literal
-  };
+  letStm->name = mkIdNode(pars->currToken);
 
   if (!peekExpect(pars, TknAssign))
     return INVALID_STATEMENT;

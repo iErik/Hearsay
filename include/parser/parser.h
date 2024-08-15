@@ -53,6 +53,8 @@ rootNode* parseProgram (parser* pars);
 
 cstring listParserErrors (parser* pars);
 
+nodeList* parse (cstring input);
+
 void registerPrefixFn (
   parser* pars,
   tokenType token,

@@ -4,10 +4,12 @@ TESTS.D := tests
 
 UTILS.H := \
 	$(INCL.D)/utils/array.h \
-	$(INCL.D)/utils/text.h
+	$(INCL.D)/utils/text.h \
+	$(INCL.D)/utils/mem.h
 UTILS.O := \
 	$(OBJ.D)/array.o \
-	$(OBJ.D)/text.o
+	$(OBJ.D)/text.o \
+	$(OBJ.D)/mem.o
 
 LEXER.H := \
 	$(INCL.D)/lexer/lexer.h \

@@ -5,13 +5,16 @@ PARSER_DEPS := \
 	$(OBJ.D)/nodeList.o \
 	$(OBJ.D)/array.o \
 	$(OBJ.D)/text.o \
+	$(OBJ.D)/mem.o
 
 NODES_DEPS := \
 	$(SRC.D)/parser/nodes.c \
-	$(INCL.D)/parser/nodes.h
+	$(INCL.D)/parser/nodes.h \
+	$(OBJ.D)/mem.o
 
 NODELIST_DEPS := \
 	$(SRC.D)/parser/nodeList.c \
+	$(OBJ.D)/mem.o
 
 # -- Rules:
 

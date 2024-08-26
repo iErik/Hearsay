@@ -81,6 +81,7 @@ void TestInfixExpr () {
     "(5 + 5) * 2;"
     "3 + 4 * 7;";
 
+  nodeList* parsedInput = parse(input);
   nodeList* nodeExp = nl_new();
 
   nl_push(nodeExp,
@@ -102,7 +103,7 @@ void TestInfixExpr () {
 
   nl_push(nodeExp,
     WrapNode(mkInfixNode(
-      newToken(TknInt, "+"),
+      newToken(TknPlus, "+"),
       WrapNode(mkIntNode(3)),
       WrapNode(mkInfixNode(
         newToken(TknAsterisk, "*"),
@@ -110,55 +111,11 @@ void TestInfixExpr () {
         WrapNode(mkIntNode(7))))
     )));
 
-  nodeList* parsedInput = parse(input);
-
-  /*
-  infixExpr exprExpect[] = {
-    {
-      .token = (token) {
-        .literal = "1",
-        .type = TknInt
-      },
-      .left = (nodeWrapper) {
-        .type = IntegerLiteral,
-        .node = &((integerLiteral) {
-          .value = 1,
-          .token = (token) {
-            .literal = "1",
-            .type = TknInt
-          }
-        })
-      },
-      .right = (nodeWrapper) {
-        .type = IntegerLiteral,
-        .node = &((integerLiteral) {
-          .value = 1,
-          .token = (token) {
-            .literal = "1",
-            .type = TknInt
-          }
-        })
-      }
-    },
-
-    {
-      .token = (token) {
-        .literal = "(",
-        .type = TknIdent
-      },
-      .left = (nodeWrapper) { },
-      .right = (nodeWrapper) { },
-    }
-  };
-  */
 
   expect(parsedInput != NULL,
       "Parsed input must not be NULL\n");
   expectEq(parsedInput->length, nodeExp->length,
     "Parsed input length");
-
-  if (parsedInput->length != nodeExp->length)
-    return;
 
   for (int i = 0; i < nodeExp->length; i++)
     expectEq(
@@ -170,13 +127,22 @@ void TestInfixExpr () {
 }
 
 // ----------------------------------------------------- //
+// -> Precedence                                         //
+// ----------------------------------------------------- //
+
+void TestPrecedence () {}
+
+// ----------------------------------------------------- //
 // -> Prefix Expressions                                 //
 // ----------------------------------------------------- //
 
 void TestPrefixExpr () {
   testing("Prefix Expressions");
 
-  cstring input = "";
+  cstring input =
+    "!true;"
+    "-10;"
+    "-(10+10);";
 
   lexer* lex = mkLexer(input);
   parser* pars = mkParser(lex);
@@ -267,7 +233,6 @@ void TestLetStatements () {
 int main () {
   TestLetStatements();
   TestInfixExpr();
-  //TestLiterals();
 
   return 0;
 }

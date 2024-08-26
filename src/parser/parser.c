@@ -332,7 +332,7 @@ nodeWrapper parseGroupedExpression (parser* pars) {
 
   nodeWrapper expr = parseExpression(pars, PrecLowest);
 
-  if (peekExpect(pars, TknRParen))
+  if (!peekExpect(pars, TknRParen))
     return INVALID_STATEMENT;
 
   return expr;

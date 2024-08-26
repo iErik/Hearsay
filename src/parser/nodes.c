@@ -508,7 +508,7 @@ integerLiteral* mkIntNode (double number) {
   lit->value = number;
   lit->token = (token) {
     .type = TknInt,
-    .literal = interpol("%d", number)
+    .literal = interpol("%d", (int) number)
   };
 
   return lit;
@@ -535,7 +535,7 @@ bool compareInt(
   integerLiteral* right
 ) {
   return tokenEq(&left->token, &right->token)
-      && left->value == right->value ;
+      && left->value == right->value;
 }
 
 cstring describeInt (integerLiteral* node) { }
@@ -643,8 +643,8 @@ bool compareNodeWrapper (
   nodeWrapper* left,
   nodeWrapper* right
 ) {
-  if (left == NULL || right == NULL) return 0;
-  if (left->type != right->type) return 0;
+  if (left == NULL || right == NULL) return false;
+  if (left->type != right->type) return false;
 
   switch (left->type) {
     case RootNode:
